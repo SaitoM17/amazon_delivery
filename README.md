@@ -1,7 +1,7 @@
-# 📊 [Nombre_Del_Proyecto]
-# [Título del Análisis]
+# 📊 Amazon Delivery 
+# Análisis de eficiencia en entregas de última milla
 
-Este proyecto realiza un análisis [exploratorio / predictivo / descriptivo] de [tema del proyecto]. El conjunto de datos incluye información sobre [breve descripción del contenido del dataset].
+Este proyecto consiste en un dashboard interactivo y la generación de reportes ejecutivos. Ambas herramientas están diseñadas para analizar el rendimiento de la entrega de pedidos. Los datos utilizados provienen de un conjunto de datos real de entregas recopilado por [Sujal Suthar](https://www.kaggle.com/datasets/sujalsuthar/amazon-delivery-dataset/data), con información valiosa para entender y mejorar la eficiencia operativa.
 
 ---
 
@@ -19,8 +19,11 @@ Este proyecto realiza un análisis [exploratorio / predictivo / descriptivo] de 
 
 ## 🎯 Propósito
 
-El objetivo de este proyecto es [objetivo general del análisis], con el fin de [impacto esperado, decisiones que se tomarán, etc.].
+El propósito principal de este proyecto es optimizar la eficiencia en la entrega de pedidos. Para lograrlo, analizaremos datos en tiempo real con el fin de:
 
+- Evaluar la eficiencia general de nuestras entregas.
+- Identificar zonas geográficas y franjas horarias con mayores desafíos operativos.
+- Reconocer el desempeño individual de los repartidores, destacando a los más eficientes y detectando áreas de mejora.
 ---
 
 ## 📦 Conjunto de Datos
