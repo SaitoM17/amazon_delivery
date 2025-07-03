@@ -30,10 +30,22 @@ El propósito principal de este proyecto es optimizar la eficiencia en la entreg
 
 El conjunto de datos utilizado contiene las siguientes columnas:
 
-- `NombreColumna1`: [Descripción]
-- `NombreColumna2`: [Descripción]
-- `NombreColumna3`: [Descripción]
-- `...`
+- `Order_ID`: Identificador único para cada pedido
+- `Agent_age`: Edad del agente de entrega
+- `Agent_Rating`: Calificación o puntuación de desempeño del agente de entrega
+- `Store_Latitude`: Coordenadas geográficas (latitud) de la tienda donde se realizó el pedido
+- `Store_Longitude`: Coordenadas geográficas (longitud) de la tienda donde se realizó el pedido
+- `Drop_Latitude`: Coordenadas geográficas (latitud) del lugar de entrega
+- `Drop_Longitude`: Coordenadas geográficas (longitud) del lugar de entrega
+- `Order_Date`: Fecha en que se realizó el pedido
+- `Order_Time`: Hora del pedido
+- `Pickup_Time`: Hora en que se recogió el pedido para su entrega
+- `Weather`: Condiciones climáticas durante la entrega (por ejemplo: sunny, rainy, snowy)
+- `Traffic`: Condiciones del tráfico durante la entrega (por ejemplo: low, medium, jam)
+- `Vehicle`: Tipo de vehiculo utilizado para la entrega (por ejemplo: van, motorcycle, bicycle, scooter)
+- `Area`: Zona donde se realizó la entrega (Urban, Metropolitan)
+- `Delivery_Time`: Tiempo que llevo completar la entrega
+- `Category`: Categoría de producto del articulo pedido (por ejemplo: electronics, apparel, groceries)
 
 Fuente: [Nombre de la fuente o “datos simulados/ficticios”].
 
