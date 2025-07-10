@@ -47,7 +47,7 @@ El conjunto de datos utilizado contiene las siguientes columnas:
 - `Delivery_Time`: Tiempo que llevo completar la entrega
 - `Category`: Categoría de producto del articulo pedido (por ejemplo: electronics, apparel, groceries)
 
-Fuente: [Nombre de la fuente o “datos simulados/ficticios”].
+Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/amazon-delivery-dataset).
 
 ---
 
