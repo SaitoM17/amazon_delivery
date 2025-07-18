@@ -10,10 +10,11 @@ Este proyecto consiste en un dashboard interactivo y la generación de reportes 
 - [🎯 Propósito](#-propósito)
 - [📦 Conjunto de Datos](#-conjunto-de-datos)
 - [🧪 Desarrollo del Proyecto](#-desarrollo-del-proyecto)
-- [📈 Conclusiones y Recomendaciones](#-conclusiones-y-recomendaciones)
+- [💡 Insight clave](#-insight-clave)
 - [🛠️ Tecnologías](#️-tecnologías)
-- [⚙️ Instalación](#️-instalación)
+- [📂 Archivos](#️-instalación)
 - [👤 Autor](#-autor)
+- [📝 Licencia](#-licencia)
 
 ---
 
@@ -73,7 +74,7 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 
 ---
 
-## 📈 Conclusiones y Recomendaciones
+## 💡 Insight clave
 
 - [Insight 1]
 - [Insight 2]
@@ -83,59 +84,29 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 
 ## 🛠️ Tecnologías
 
-- Python
-- Pandas
-- Matplotlib
-- Seaborn
-- Jupyter Notebook / Google Colab
-- [Otras herramientas que uses, como Scikit-learn, Plotly, etc.]
+- **Python** - Limpeieza de datos y análisis de datos
+   - Pandas
+   - Numpy
+   - Matplotlib
+   - Seaborn
+   - Jupyter Notebook
+- **Kaggle** - Fuente de datos 
+- **Tableau** - Visualización de datos y creación de Dashboard
+- **GitHub** - Repositorio
 
 ---
 
-## ⚙️ Instalación
+## 📂 Archivos
 
-### 1. Clonar este repositorio:
-```bash
-git clone https://github.com/tu_usuario/nombre_del_proyecto.git
-```
-### 2. Uso de un Entorno Virtual para Aislar Dependencias
 
-Para evitar conflictos con versiones de librerías, se recomienda usar entornos virtuales.
-
-####  Crear y Activar un Entorno Virtual
-
-##### Crear el entorno virtual:
-```
-python -m venv venv
-```
-##### Activar el entorno:
-* #### En Windows:
-
-    ```
-    venv\Scripts\activate
-    ```
-
-* #### En Mac/Linux::
-
-    ```
-    source venv/bin/activate
-    ```
-#### 3. Instalar dependencias dentro del entorno:
-* #### Opición 1:
-    ```
-    pip install -r requirements.txt
-    ```
-
-* #### Opción 2 (De forma manual):
-    ```
-    pip install numpy pandas matplotlib seaborn scikit-learn
-    ```
 
 ---
 
 ## 👤 Autor
 
-**Said Mariano Sánchez** – *smariano170@gmail.com*  
+**Said Mariano Sánchez** – [📧](smariano170@gmail.com)
+Analista de Datos Jr. | Visualización | Power BI | Python | SQL
+🌎 México
 Este proyecto forma parte de mi portafolio como analista de datos Jr.
 
 ---
