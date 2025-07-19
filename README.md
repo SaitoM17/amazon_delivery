@@ -10,6 +10,7 @@ Este proyecto consiste en un dashboard interactivo y la generación de reportes 
 - [🎯 Propósito](#-propósito)
 - [📦 Conjunto de Datos](#-conjunto-de-datos)
 - [🧪 Desarrollo del Proyecto](#-desarrollo-del-proyecto)
+- [📌 Vista previa del Dashboard](#-vista-previa-del-dashboard)
 - [💡 Insight clave](#-insight-clave)
 - [🛠️ Tecnologías](#️-tecnologías)
 - [📂 Archivos](#️-instalación)
@@ -72,6 +73,10 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 6. **Conclusiones y recomendaciones**:
    - Síntesis de hallazgos clave y propuestas de acción.
 
+---
+
+## 📌 Vista previa del Dashboard
+[Vsita Dashboard Amazon Delivery](dashboard/Dashboard_Amazon_Delivery.png)
 ---
 
 ## 💡 Insight clave
