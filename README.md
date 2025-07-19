@@ -55,22 +55,56 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 
 ## 🧪 Desarrollo del Proyecto
 
-1. **Carga y exploración inicial de los datos**:
-   - Exploración básica con `.head()`, `.info()`, `.describe()`, etc.
+1. **Creación y carga de la base de datos**:
+Este apartado describe los pasos para cargar, explorar y preparar inicialmente el conjunto de datos amazon_delivery.csv en una base de datos MySQL.
 
-2. **Limpieza y preprocesamiento**:
+1. Origen de los Datos
+El conjunto de datos utilizado para este análisis es amazon_delivery.csv, obtenido de Kaggle. Contiene información relacionada con entregas de Amazon.
+
+2. Configuración de la Base de Datos
+Para comenzar, necesitamos crear y seleccionar la base de datos donde se almacenarán nuestros datos.
+
+```SQL
+CREATE DATABASE amazon_delivery;
+USE amazon_delivery; -- Asegúrate de seleccionar la base de datos correcta
+```
+
+3. Carga de Datos
+Los datos se cargaron en la base de datos MySQL utilizando la interfaz gráfica de MySQL Workbench, específicamente el "Table Data Import Wizard".
+
+Pasos para cargar los datos usando MySQL Workbench:
+1. Crear la base de datos: Ejecuta la sentencia CREATE DATABASE amazon_delivery; o créala manualmente.
+2. Seleccionar la base de datos: Haz doble clic en la base de datos amazon_delivery en el panel "Schemas" para seleccionarla, o usa la sentencia USE amazon_delivery;.
+3. Iniciar el asistente de importación: Haz clic derecho en el apartado de "Tables" dentro de tu base de datos amazon_delivery.
+4. Seleccionar "Table Data Import Wizard": Elige esta opción del menú contextual.
+5. Seleccionar la ruta del archivo CSV: Navega y selecciona el archivo amazon_delivery.csv desde tu sistema de archivos.
+6. Seleccionar "Create new table": Elige esta opción para crear una nueva tabla donde se importarán los datos.
+7. Configurar los tipos de datos: Revisa y ajusta los tipos de datos sugeridos por el asistente para cada columna, asegurándote de que coincidan con el formato de tus datos (por ejemplo, VARCHAR para texto, INT o DECIMAL para números, DATE para fechas, etc.).
+
+Finalizar la importación: Haz clic en "Next" y sigue las instrucciones finales para que el asistente comience a crear la tabla y cargar los datos.
+
+4. Verificación y Exploración Inicial
+Una vez que los datos se han cargado, puedes verificar que la tabla se haya creado correctamente y realizar una exploración inicial seleccionando todas las filas de la tabla:
+```SQL
+SELECT * FROM amazon_delivery;
+```
+Este comando te permitirá ver las primeras filas de los datos importados y confirmar que la carga fue exitosa.
+
+2. **Carga y exploración inicial de los datos**:
+
+3. **Limpieza y preprocesamiento**:
    - Manejo de valores nulos, duplicados, formatos y conversiones de fechas.
 
-3. **Análisis exploratorio de datos (EDA)**:
+4. **Análisis exploratorio de datos (EDA)**:
    - [Ej. Distribución, correlaciones, agrupaciones, etc.]
 
-4. **Visualización de datos**:
+5. **Visualización de datos**:
    - Uso de gráficos de barras, líneas, cajas, dispersión y mapas de calor.
 
-5. **Modelado o reportes (opcional)**:
+6. **Modelado o reportes (opcional)**:
    - [Si aplica: modelos de ML, clustering, predicciones, etc.]
 
-6. **Conclusiones y recomendaciones**:
+7. **Conclusiones y recomendaciones**:
    - Síntesis de hallazgos clave y propuestas de acción.
 
 ---
