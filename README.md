@@ -55,7 +55,7 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 
 ## 🧪 Desarrollo del Proyecto
 
-1. **Creación y carga de la base de datos**
+#### 1. **Creación y carga de la base de datos**
 
 Este apartado describe los pasos para cargar, explorar y preparar inicialmente el conjunto de datos amazon_delivery.csv en una base de datos MySQL.
 
@@ -93,7 +93,7 @@ Este comando te permitirá ver las primeras filas de los datos importados y conf
 
 ***Archivo: [create_db.sql](sql/create_db.sql)***
 
-2. **Exploración inicial de los datos**
+#### 2. **Exploración inicial de los datos**
 
 Una vez que los datos han sido cargados en la base de datos amazon_delivery, se realiza una serie de consultas SQL para obtener una comprensión inicial de la estructura, el volumen y la calidad de los datos.
 
