@@ -76,7 +76,7 @@ Fuente: [Amazon Delivery Dataset](https://www.kaggle.com/datasets/sujalsuthar/am
 ---
 
 ## 📌 Vista previa del Dashboard
-[Vsita Dashboard Amazon Delivery](dashboard/Dashboard_Amazon_Delivery.png)
+![Vsita Dashboard Amazon Delivery](dashboard/Dashboard_Amazon_Delivery.png)
 ---
 
 ## 💡 Insight clave
