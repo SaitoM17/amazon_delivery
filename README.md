@@ -551,7 +551,7 @@ SET @lon_precision = 2; -- Ej: Redondear a 2 decimales
 Imputación para Weather
     1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
 
-    ```sql
+    ```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_counts AS
     SELECT
         ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
@@ -637,6 +637,7 @@ Imputación para Weather
         amazon;
     ```
 Imputación para Traffic
+
 El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda del tráfico en zonas y fechas similares.
 
     1. Paso 1: Crear tabla temporal con conteos de Traffic por zona y fecha
