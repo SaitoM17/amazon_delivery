@@ -543,6 +543,7 @@ WHERE Order_Time < '00:00:00'
 Para imputar Weather y Traffic, se utiliza una estrategia basada en la moda (el valor más frecuente) de estas columnas dentro de "vecindarios" definidos por la latitud y longitud redondeadas, y la fecha del pedido. Esto asume que el clima y el tráfico son similares en ubicaciones y fechas cercanas.
 
 Se definen variables para la precisión del redondeo de las coordenadas:
+
 ```SQL
 SET @lat_precision = 2; -- Ej: Redondear a 2 decimales (aprox. 1.1 km de 'vecindario')
 SET @lon_precision = 2; -- Ej: Redondear a 2 decimales
@@ -552,7 +553,7 @@ Imputación para Weather
 
     1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
 
- ```SQL
+     ```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_counts AS
     SELECT
         ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
@@ -569,7 +570,7 @@ Imputación para Weather
         rounded_lon,
         Order_Date,
         Weather;
-```
+    ```
 
     2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
 
