@@ -549,6 +549,7 @@ SET @lon_precision = 2; -- Ej: Redondear a 2 decimales
 ```
 
 Imputación para Weather
+
     1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
 
     ```SQL
@@ -572,7 +573,7 @@ Imputación para Weather
 
     2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
 
-    ```SQL
+    
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_max_counts AS
     SELECT
         rounded_lat,
@@ -585,11 +586,11 @@ Imputación para Weather
         rounded_lat,
         rounded_lon,
         Order_Date;
-    ```
+    
 
     3. Paso 3: Obtener la moda de Weather por grupo
 
-    ```SQL
+    
     CREATE TEMPORARY TABLE IF NOT EXISTS final_weather_modes AS
     SELECT
         twc.rounded_lat,
@@ -604,11 +605,11 @@ Imputación para Weather
         twc.rounded_lon = tmc.rounded_lon AND
         twc.Order_Date = tmc.Order_Date AND
         twc.cnt = tmc.max_cnt;
-    ```
+    
 
     4. Paso 4: Actualizar la tabla original amazon con los valores imputados
 
-    ```SQL
+    
     UPDATE amazon a
     JOIN final_weather_modes fwm ON
         ROUND(a.Drop_Latitude, @lat_precision) = fwm.rounded_lat AND
@@ -618,24 +619,25 @@ Imputación para Weather
         a.Weather = fwm.Weather
     WHERE
         a.Weather IS NULL;
-    ```
+    
 
     5. Limpiar tablas temporales:
 
-    ```SQL
+    
     DROP TEMPORARY TABLE IF EXISTS temp_weather_counts;
     DROP TEMPORARY TABLE IF EXISTS temp_max_counts;
     DROP TEMPORARY TABLE IF EXISTS final_weather_modes;
-    ```
+    
 
     * Verificar la cantidad de nulos en Weather después de la imputación:
 
-    ```SQL
+    
     SELECT
         SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather
     FROM
         amazon;
-    ```
+
+
 Imputación para Traffic
 
 El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda del tráfico en zonas y fechas similares.
