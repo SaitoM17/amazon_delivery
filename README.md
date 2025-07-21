@@ -441,6 +441,8 @@ LIMIT
     10;
 ```
 
+***Archivo: [limpieza_transformacion.sql](sql/limpieza_transformacion.sql)***
+
 10. Verificación Inicial de Registros y Nulos
 Antes de proceder con la imputación, se realiza una verificación para conocer el volumen total de registros y la cantidad de nulos presentes en las columnas objetivo.
 
@@ -761,6 +763,8 @@ FROM
     amazon;
 ```
 Resultado: La cantidad de registros pasó de 43685 a 43644.
+
+***ArchiVO: [Imputación_eliminación _order_time_weather_traffic.sql](sql/inputacion_eliminacion_order_time_weather_traffic.sql)***
 
 4. **Análisis exploratorio de datos (EDA)**:
    - [Ej. Distribución, correlaciones, agrupaciones, etc.]
