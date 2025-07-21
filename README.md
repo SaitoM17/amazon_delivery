@@ -764,7 +764,7 @@ FROM
 ```
 Resultado: La cantidad de registros pasó de 43685 a 43644.
 
-***ArchiVO: [Imputación_eliminación _order_time_weather_traffic.sql](sql/inputacion_eliminacion_order_time_weather_traffic.sql)***
+***Archivo: [Imputación_eliminación _order_time_weather_traffic.sql](sql/inputacion_eliminacion_order_time_weather_traffic.sql)***
 
 4. **Análisis exploratorio de datos (EDA)**:
    - [Ej. Distribución, correlaciones, agrupaciones, etc.]
