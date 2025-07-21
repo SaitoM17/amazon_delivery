@@ -552,7 +552,7 @@ Imputación para Weather
 
     1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
 
-    ```SQL
+ ```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_counts AS
     SELECT
         ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
@@ -569,7 +569,7 @@ Imputación para Weather
         rounded_lon,
         Order_Date,
         Weather;
-    ```
+```
 
     2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
 
