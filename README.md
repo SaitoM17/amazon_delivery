@@ -185,8 +185,252 @@ SELECT
 
 Lograr detectar valores inconsistentes o faltantes que no son NULL, pero que representan datos inválidos (como cadenas vacías o textos como "NaN"), es un paso clave durante la fase de limpieza de datos.
 
-3. **Limpieza y preprocesamiento**:
-   - Manejo de valores nulos, duplicados, formatos y conversiones de fechas.
+### 3. **Limpieza y preprocesamiento**
+Las primeras etapas del proceso de limpieza y transformación de los datos en la tabla amazon, enfocándose en la estandarización de valores, la corrección de tipos de datos y la identificación de inconsistencias.
+
+1. Reemplazo de Valores Problemáticos por NULL
+Antes de realizar cualquier conversión de tipo de dato, es crucial estandarizar los valores que representan datos faltantes o inválidos. Esta consulta UPDATE reemplaza cadenas vacías (''), la cadena 'NaN' o subcadenas que contengan 'NaN' por NULL en las columnas Order_Time, Weather y Traffic.
+
+```SQL
+UPDATE amazon
+SET
+    -- Para columnas de tiempo/fecha:
+    Order_Time = CASE WHEN TRIM(Order_Time) = '' OR TRIM(Order_Time) LIKE '%NaN%' THEN NULL ELSE Order_Time END,
+    -- Para otras columnas TEXT:
+    Weather = CASE WHEN TRIM(Weather) = '' OR TRIM(Weather) LIKE '%NaN%' THEN NULL ELSE Weather END,
+    Traffic = CASE WHEN TRIM(Traffic) = '' OR TRIM(Traffic) LIKE '%NaN%' THEN NULL ELSE Traffic END;
+```
+Realizar este paso nos ayuda a preparar los datos para conversiones de tipo más precisas, asegurando que los valores ausentes sean representados uniformemente como NULL.
+
+2. Identificación de Valores Nulos
+Después de la primera fase de reemplazo, se realiza una verificación exhaustiva para contar la cantidad de valores NULL en cada columna. Esto proporciona una visión clara de la completitud de los datos, lo cual es fundamental para decidir las estrategias de imputación o eliminación.
+
+```SQL
+SELECT
+    SUM(CASE WHEN Order_ID IS NULL THEN 1 ELSE 0 END) AS nulos_Order_ID,
+    SUM(CASE WHEN Agent_age IS NULL THEN 1 ELSE 0 END) AS nulos_Agent_age,
+    SUM(CASE WHEN Agent_Rating IS NULL THEN 1 ELSE 0 END) AS nulos_Agent_Rating,
+    SUM(CASE WHEN Store_Latitude IS NULL THEN 1 ELSE 0 END) AS nulos_Store_Latitude,
+    SUM(CASE WHEN Store_Longitude IS NULL THEN 1 ELSE 0 END) AS nulos_Store_Longitude,
+    SUM(CASE WHEN Drop_Latitude IS NULL THEN 1 ELSE 0 END) AS nulos_Drop_Latitude,
+    SUM(CASE WHEN Drop_Longitude IS NULL THEN 1 ELSE 0 END) AS nulos_Drop_Longitude,
+    SUM(CASE WHEN Order_Date IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Date,
+    SUM(CASE WHEN Order_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Time,
+    SUM(CASE WHEN Pickup_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Pickup_Time,
+    SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather,
+    SUM(CASE WHEN Traffic IS NULL THEN 1 ELSE 0 END) AS nulos_Traffic,
+    SUM(CASE WHEN Vehicle IS NULL THEN 1 ELSE 0 END) AS nulos_Vehicle,
+    SUM(CASE WHEN Area IS NULL THEN 1 ELSE 0 END) AS nulos_Area,
+    SUM(CASE WHEN Delivery_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Delivery_Time,
+    SUM(CASE WHEN Category IS NULL THEN 1 ELSE 0 END) AS nulos_Category
+FROM
+    amazon;
+```
+
+3. Transformación de Columnas de Tiempo (Order_Time, Pickup_Time)
+Este paso se encarga de convertir las columnas de tiempo, que originalmente podrían haber sido importadas como TEXT, a un tipo de dato TIME adecuado para análisis de tiempo. Se utilizan columnas temporales para asegurar la integridad de los datos durante la transformación.
+
+1. Añadir columnas temporales:
+```SQL
+ALTER TABLE amazon
+ADD COLUMN temp_order_time TIME,
+ADD COLUMN temp_pickup_time TIME;
+```
+
+2. Convertir y poblar:
+```SQL
+UPDATE amazon
+SET
+    temp_order_time = STR_TO_DATE(Order_Time, '%H:%i:%s'),
+    temp_pickup_time = STR_TO_DATE(Pickup_Time, '%H:%i:%s');
+```
+
+3. Verificar la conversión:
+```SQL
+SELECT
+    Order_Time,
+    temp_order_time,
+    Pickup_Time,
+    temp_pickup_time
+FROM
+    amazon
+LIMIT 10;
+```
+
+4. Eliminar columnas originales:
+```SQL
+ALTER TABLE amazon
+DROP COLUMN Order_Time,
+DROP COLUMN Pickup_Time;
+```
+
+5. Renombrar columnas temporales:
+```SQL
+ALTER TABLE amazon
+CHANGE COLUMN temp_order_time Order_Time TIME,
+CHANGE COLUMN temp_pickup_time Pickup_Time TIME;
+```
+
+4. Transformación de la Columna de Fecha (Order_Date)
+Similar al proceso de las columnas de tiempo, esta sección se dedica a convertir Order_Date a un tipo de dato DATE.
+
+1. Añadir columna temporal:
+```SQL
+ALTER TABLE amazon
+ADD COLUMN temp_order_date DATE;
+```
+
+2. Convertir y poblar:
+```SQL
+UPDATE amazon
+SET temp_order_date = DATE(Order_Date);
+```
+
+3. Verificar la conversión (opcional):
+```SQL
+SELECT
+    Order_Date, temp_order_date
+FROM
+    amazon
+LIMIT
+    10;
+```
+
+4. Eliminar columna original:
+```SQL
+ALTER TABLE amazon
+DROP COLUMN Order_Date;
+```
+
+5. Renombrar columna temporal:
+
+```SQL
+ALTER TABLE amazon
+CHANGE COLUMN temp_order_date Order_Date DATE;
+```
+
+5. Limpieza de Cadenas de Texto (Eliminar Espacios Extra)
+Esta operación UPDATE utiliza la función TRIM() para eliminar espacios en blanco al inicio y al final de las cadenas en varias columnas de texto.
+
+```SQL
+UPDATE amazon
+SET
+    Weather = TRIM(Weather),
+    Traffic = TRIM(Traffic),
+    Vehicle = TRIM(Vehicle),
+    Area = TRIM(Area),
+    Category = TRIM(Category);
+```
+
+6. Re-evaluación de Valores Nulos
+Se realiza una segunda verificación de valores nulos después de las transformaciones de tipo y la limpieza de cadenas.
+
+```SQL
+SELECT
+    SUM(CASE WHEN Order_ID IS NULL THEN 1 ELSE 0 END) AS nulos_Order_ID,
+    SUM(CASE WHEN Agent_age IS NULL THEN 1 ELSE 0 END) AS nulos_Agent_age,
+    SUM(CASE WHEN Agent_Rating IS NULL THEN 1 ELSE 0 END) AS nulos_Agent_Rating,
+    SUM(CASE WHEN Store_Latitude IS NULL THEN 1 ELSE 0 END) AS nulos_Store_Latitude,
+    SUM(CASE WHEN Store_Longitude IS NULL THEN 1 ELSE 0 END) AS nulos_Store_Longitude,
+    SUM(CASE WHEN Drop_Latitude IS NULL THEN 1 ELSE 0 END) AS nulos_Drop_Latitude,
+    SUM(CASE WHEN Drop_Longitude IS NULL THEN 1 ELSE 0 END) AS nulos_Drop_Longitude,
+    SUM(CASE WHEN Order_Date IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Date,
+    SUM(CASE WHEN Order_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Time,
+    SUM(CASE WHEN Pickup_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Pickup_Time,
+    SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather,
+    SUM(CASE WHEN Traffic IS NULL THEN 1 ELSE 0 END) AS nulos_Traffic,
+    SUM(CASE WHEN Vehicle IS NULL THEN 1 ELSE 0 END) AS nulos_Vehicle,
+    SUM(CASE WHEN Area IS NULL THEN 1 ELSE 0 END) AS nulos_Area,
+    SUM(CASE WHEN Delivery_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Delivery_Time,
+    SUM(CASE WHEN Category IS NULL THEN 1 ELSE 0 END) AS nulos_Category
+FROM
+    amazon;
+```
+
+7. Búsqueda de Valores Negativos o Fuera de Rango
+Esta consulta identifica registros donde las columnas numéricas (Agent_Age, Agent_Rating, coordenadas de latitud/longitud, Delivery_Time) contienen valores negativos o valores de latitud/longitud que están fuera de los rangos geográficos válidos.
+
+```SQL
+SELECT
+    Agent_Age,
+    Agent_Rating,
+    Store_Latitude,
+    Store_Longitude,
+    Drop_Latitude,
+    Drop_Longitude,
+    Delivery_Time
+FROM
+    amazon
+WHERE
+    Agent_Age < 0 OR
+    Agent_Rating < 0 OR
+    Store_Latitude < -90 OR Store_Latitude > 90 OR -- Latitud fuera de rango
+    Store_Longitude < -180 OR Store_Longitude > 180 OR -- Longitud fuera de rango
+    Drop_Latitude < -90 OR Drop_Latitude > 90 OR
+    Drop_Longitude < -180 OR Drop_Longitude > 180 OR
+    Delivery_Time < 0;
+```
+
+8. Identificación de Registros Completamente Duplicados
+Se verifica la existencia de filas que son idénticas en todas sus columnas.
+
+```SQL
+SELECT
+    Order_ID,
+    Agent_age,
+    Agent_Rating,
+    Store_Latitude,
+    Store_Longitude,
+    Drop_Latitude,
+    Drop_Longitude,
+    Order_Date,
+    Order_Time,
+    Pickup_Time,
+    Weather,
+    Traffic,
+    Vehicle,
+    Area,
+    Delivery_Time,
+    Category,
+    COUNT(*) AS cant_duplicados
+FROM
+    amazon
+GROUP BY
+    Order_ID,
+    Agent_age,
+    Agent_Rating,
+    Store_Latitude,
+    Store_Longitude,
+    Drop_Latitude,
+    Drop_Longitude,
+    Order_Date,
+    Order_Time,
+    Pickup_Time,
+    Weather,
+    Traffic,
+    Vehicle,
+    Area,
+    Delivery_Time,
+    Category
+HAVING
+    COUNT(*) > 1;
+```
+
+9. Verificación de la Estructura y Datos Finales (Parte 1)
+Finalmente, se revisa la estructura de la tabla y se visualizan las primeras filas para confirmar que todas las transformaciones de esta primera parte se hayan aplicado correctamente.
+
+```SQL
+DESCRIBE amazon;
+```
+
+```SQL
+SELECT
+    *
+FROM
+    amazon
+LIMIT
+    10;
+```
 
 4. **Análisis exploratorio de datos (EDA)**:
    - [Ej. Distribución, correlaciones, agrupaciones, etc.]
