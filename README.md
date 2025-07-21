@@ -816,7 +816,6 @@ df_amazon_delivery.head()
 
 Salida:
 
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
