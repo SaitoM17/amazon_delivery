@@ -230,14 +230,14 @@ FROM
 3. Transformación de Columnas de Tiempo (Order_Time, Pickup_Time)
 Este paso se encarga de convertir las columnas de tiempo, que originalmente podrían haber sido importadas como TEXT, a un tipo de dato TIME adecuado para análisis de tiempo. Se utilizan columnas temporales para asegurar la integridad de los datos durante la transformación.
 
-1. Añadir columnas temporales:
+    1. Añadir columnas temporales:
 ```SQL
 ALTER TABLE amazon
 ADD COLUMN temp_order_time TIME,
 ADD COLUMN temp_pickup_time TIME;
 ```
 
-2. Convertir y poblar:
+    2. Convertir y poblar:
 ```SQL
 UPDATE amazon
 SET
@@ -245,7 +245,7 @@ SET
     temp_pickup_time = STR_TO_DATE(Pickup_Time, '%H:%i:%s');
 ```
 
-3. Verificar la conversión:
+    3. Verificar la conversión:
 ```SQL
 SELECT
     Order_Time,
@@ -257,14 +257,14 @@ FROM
 LIMIT 10;
 ```
 
-4. Eliminar columnas originales:
+    4. Eliminar columnas originales:
 ```SQL
 ALTER TABLE amazon
 DROP COLUMN Order_Time,
 DROP COLUMN Pickup_Time;
 ```
 
-5. Renombrar columnas temporales:
+    5. Renombrar columnas temporales:
 ```SQL
 ALTER TABLE amazon
 CHANGE COLUMN temp_order_time Order_Time TIME,
