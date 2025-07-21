@@ -231,6 +231,7 @@ FROM
 Este paso se encarga de convertir las columnas de tiempo, que originalmente podrían haber sido importadas como TEXT, a un tipo de dato TIME adecuado para análisis de tiempo. Se utilizan columnas temporales para asegurar la integridad de los datos durante la transformación.
 
     1. Añadir columnas temporales:
+
     ```SQL
     ALTER TABLE amazon
     ADD COLUMN temp_order_time TIME,
@@ -238,6 +239,7 @@ Este paso se encarga de convertir las columnas de tiempo, que originalmente podr
     ```
 
     2. Convertir y poblar:
+
     ```SQL
     UPDATE amazon
     SET
@@ -246,6 +248,7 @@ Este paso se encarga de convertir las columnas de tiempo, que originalmente podr
     ```
 
     3. Verificar la conversión:
+
     ```SQL
     SELECT
         Order_Time,
@@ -258,6 +261,7 @@ Este paso se encarga de convertir las columnas de tiempo, que originalmente podr
     ```
 
     4. Eliminar columnas originales:
+
     ```SQL
     ALTER TABLE amazon
     DROP COLUMN Order_Time,
@@ -265,6 +269,7 @@ Este paso se encarga de convertir las columnas de tiempo, que originalmente podr
     ```
 
     5. Renombrar columnas temporales:
+
     ```SQL
     ALTER TABLE amazon
     CHANGE COLUMN temp_order_time Order_Time TIME,
@@ -274,40 +279,44 @@ Este paso se encarga de convertir las columnas de tiempo, que originalmente podr
 4. Transformación de la Columna de Fecha (Order_Date)
 Similar al proceso de las columnas de tiempo, esta sección se dedica a convertir Order_Date a un tipo de dato DATE.
 
-1. Añadir columna temporal:
-```SQL
-ALTER TABLE amazon
-ADD COLUMN temp_order_date DATE;
-```
+    1. Añadir columna temporal:
 
-2. Convertir y poblar:
-```SQL
-UPDATE amazon
-SET temp_order_date = DATE(Order_Date);
-```
+    ```SQL
+    ALTER TABLE amazon
+    ADD COLUMN temp_order_date DATE;
+    ```
 
-3. Verificar la conversión (opcional):
-```SQL
-SELECT
-    Order_Date, temp_order_date
-FROM
-    amazon
-LIMIT
-    10;
-```
+    2. Convertir y poblar:
 
-4. Eliminar columna original:
-```SQL
-ALTER TABLE amazon
-DROP COLUMN Order_Date;
-```
+    ```SQL
+    UPDATE amazon
+    SET temp_order_date = DATE(Order_Date);
+    ```
 
-5. Renombrar columna temporal:
+    3. Verificar la conversión (opcional):
 
-```SQL
-ALTER TABLE amazon
-CHANGE COLUMN temp_order_date Order_Date DATE;
-```
+    ```SQL
+    SELECT
+        Order_Date, temp_order_date
+    FROM
+        amazon
+    LIMIT
+        10;
+    ```
+
+    4. Eliminar columna original:
+
+    ```SQL
+    ALTER TABLE amazon
+    DROP COLUMN Order_Date;
+    ```
+
+    5. Renombrar columna temporal:
+
+    ```SQL
+    ALTER TABLE amazon
+    CHANGE COLUMN temp_order_date Order_Date DATE;
+    ```
 
 5. Limpieza de Cadenas de Texto (Eliminar Espacios Extra)
 Esta operación UPDATE utiliza la función TRIM() para eliminar espacios en blanco al inicio y al final de las cadenas en varias columnas de texto.
