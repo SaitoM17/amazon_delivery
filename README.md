@@ -792,8 +792,249 @@ Pasos para exportar los datos desde MySQL Workbench: Después de ejecutar la con
 
 ***Archivo: [exportacion_datos.sql](sql/exportacion_datos.sql)***
 
-4. **Análisis exploratorio de datos (EDA)**:
-   - [Ej. Distribución, correlaciones, agrupaciones, etc.]
+### 4. **Análisis exploratorio de datos (EDA)**
+
+La fase inicial del Análisis Exploratorio de Datos (EDA) se utilizo Python y las librerías ``pandas, numpy, seaborn, matplotlib``. El objetivo es cargar el conjunto de datos limpio, comprender su estructura, tipos de datos y realizar las transformaciones necesarias para un análisis posterior.
+
+1. Carga de Librerías Necesarias
+Se importan las librerías pandas para la manipulación de datos, numpy para operaciones numéricas, y seaborn junto con matplotlib.pyplot para la visualización de datos.
+
+```Python
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+```
+
+2. Carga del Conjunto de Datos
+El conjunto de datos amazon_delivery_limpios.csv, resultado de la fase de limpieza y preprocesamiento en MySQL, se carga en un DataFrame de pandas. Se muestra las primeras filas para una inspección rápida.
+
+```Python
+df_amazon_delivery = pd.read_csv('../data/processed/amazon_delivery_limpios.csv')
+df_amazon_delivery.head()
+```
+
+Salida:
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Order_ID</th>
+      <th>Agent_Age</th>
+      <th>Agent_Rating</th>
+      <th>Store_Latitude</th>
+      <th>Store_Longitude</th>
+      <th>Drop_Latitude</th>
+      <th>Drop_Longitude</th>
+      <th>Weather</th>
+      <th>Traffic</th>
+      <th>Vehicle</th>
+      <th>Area</th>
+      <th>Delivery_Time</th>
+      <th>Category</th>
+      <th>Order_Time</th>
+      <th>Pickup_Time</th>
+      <th>Order_Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ialx566343618</td>
+      <td>37</td>
+      <td>4.9</td>
+      <td>22.745049</td>
+      <td>75.892471</td>
+      <td>22.765049</td>
+      <td>75.912471</td>
+      <td>Sunny</td>
+      <td>High</td>
+      <td>motorcycle</td>
+      <td>Urban</td>
+      <td>120</td>
+      <td>Clothing</td>
+      <td>11:30:00</td>
+      <td>11:45:00</td>
+      <td>2022-03-19</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>akqg208421122</td>
+      <td>34</td>
+      <td>4.5</td>
+      <td>12.913041</td>
+      <td>77.683237</td>
+      <td>13.043041</td>
+      <td>77.813237</td>
+      <td>Stormy</td>
+      <td>Jam</td>
+      <td>scooter</td>
+      <td>Metropolitian</td>
+      <td>165</td>
+      <td>Electronics</td>
+      <td>19:45:00</td>
+      <td>19:50:00</td>
+      <td>2022-03-25</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>njpu434582536</td>
+      <td>23</td>
+      <td>4.4</td>
+      <td>12.914264</td>
+      <td>77.678400</td>
+      <td>12.924264</td>
+      <td>77.688400</td>
+      <td>Sandstorms</td>
+      <td>Low</td>
+      <td>motorcycle</td>
+      <td>Urban</td>
+      <td>130</td>
+      <td>Sports</td>
+      <td>08:30:00</td>
+      <td>08:45:00</td>
+      <td>2022-03-19</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>rjto796129700</td>
+      <td>38</td>
+      <td>4.7</td>
+      <td>11.003669</td>
+      <td>76.976494</td>
+      <td>11.053669</td>
+      <td>77.026494</td>
+      <td>Sunny</td>
+      <td>Medium</td>
+      <td>motorcycle</td>
+      <td>Metropolitian</td>
+      <td>105</td>
+      <td>Cosmetics</td>
+      <td>18:00:00</td>
+      <td>18:10:00</td>
+      <td>2022-04-05</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>zguw716275638</td>
+      <td>32</td>
+      <td>4.6</td>
+      <td>12.972793</td>
+      <td>80.249982</td>
+      <td>13.012793</td>
+      <td>80.289982</td>
+      <td>Cloudy</td>
+      <td>High</td>
+      <td>scooter</td>
+      <td>Metropolitian</td>
+      <td>150</td>
+      <td>Toys</td>
+      <td>13:30:00</td>
+      <td>13:45:00</td>
+      <td>2022-03-26</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+3. Exploración del Conjunto de Datos
+Se obtiene la cantidad de filas y columnas del DataFrame para entender su dimensionalidad.
+
+```Python
+filas, columnas = df_amazon_delivery.shape
+print(f'El conjunto de datos amazon_delivery_limpio.csv contiene:\nfilas:{filas:>10}\ncolumnas:{columnas:>7}')
+```
+
+Salida:
+```bash
+El conjunto de datos amazon_delivery_limpio.csv contiene:
+filas:     43644
+columnas:     16
+```
+
+4. Tipos de Datos de Cada Columna
+Se utiliza el método info() para obtener un resumen conciso del DataFrame, incluyendo el número de entradas no nulas y el tipo de dato de cada columna.
+
+```Python
+df_amazon_delivery.info()
+```
+
+Salida:
+```bash
+<class 'pandas.core.frame.DataFrame'>
+RangeIndex: 43644 entries, 0 to 43643
+Data columns (total 16 columns):
+ #   Column           Non-Null Count  Dtype  
+---  ------           --------------  -----  
+ 0   Order_ID         43644 non-null  object 
+ 1   Agent_Age        43644 non-null  int64  
+ 2   Agent_Rating     43644 non-null  float64
+ 3   Store_Latitude   43644 non-null  float64
+ 4   Store_Longitude  43644 non-null  float64
+ 5   Drop_Latitude    43644 non-null  float64
+ 6   Drop_Longitude   43644 non-null  float64
+ 7   Weather          43644 non-null  object 
+ 8   Traffic          43644 non-null  object 
+ 9   Vehicle          43644 non-null  object 
+ 10  Area             43644 non-null  object 
+ 11  Delivery_Time    43644 non-null  int64  
+ 12  Category         43644 non-null  object 
+ 13  Order_Time       43644 non-null  object 
+ 14  Pickup_Time      43644 non-null  object 
+ 15  Order_Date       43644 non-null  object 
+dtypes: float64(5), int64(2), object(9)
+memory usage: 5.3+ MB
+```
+Observaciones:
+Las columnas ``Order_Time``, ``Pickup_Time`` y ``Order_Date`` fueron importadas como tipo object (cadena de texto) y necesitan ser convertidas a tipos de datos de tiempo y fecha (timedelta y datetime respectivamente) para permitir operaciones temporales. Los tipos de datos de las demás columnas son correctos.
+
+5. Transformación de Tipos de Datos
+Se realizan las conversiones de tipo de dato necesarias para las columnas de tiempo y fecha.
+
+Transformación de Order_Time y Pickup_Time a timedelta:`
+
+Se utiliza ``pd.to_timedelta()`` para convertir las cadenas de tiempo en objetos Timedelta, que representan duraciones de tiempo. Se crean nuevas columnas ``Order_Time_TD`` y ``Pickup_Time_TD`` para almacenar estos valores.
+
+```Python
+df_amazon_delivery['Order_Time_TD'] = pd.to_timedelta(df_amazon_delivery['Order_Time'])
+df_amazon_delivery['Pickup_Time_TD'] = pd.to_timedelta(df_amazon_delivery['Pickup_Time'])
+```
+
+Transformación de Order_Date a datetime:
+
+Se convierte la columna ``Order_Date`` a tipo datetime64[ns] utilizando ``pd.to_datetime()``, especificando el formato para una conversión correcta.
+
+```Python
+df_amazon_delivery['Order_Date'] = pd.to_datetime(df_amazon_delivery['Order_Date'], format='%Y-%m-%d', errors='coerce')
+print('Tipo de Order_Date después de la primera conversion:', df_amazon_delivery['Order_Date'].dtype)
+print('\nColumna con solo la fehca')
+print(df_amazon_delivery['Order_Date'].head(3))
+```
+
+Salida:
+```bash
+Tipo de Order_Date después de la primera conversion: datetime64[ns]
+
+Columna con solo la fehca
+0   2022-03-19
+1   2022-03-25
+2   2022-03-19
+Name: Order_Date, dtype: datetime64[ns]
+```
 
 5. **Visualización de datos**:
    - Uso de gráficos de barras, líneas, cajas, dispersión y mapas de calor.
