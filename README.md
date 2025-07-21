@@ -550,10 +550,9 @@ SET @lon_precision = 2; -- Ej: Redondear a 2 decimales
 ```
 
 Imputación para Weather
+* Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
 
-    1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
-
-     ```SQL
+ ```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_counts AS
     SELECT
         ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
@@ -570,11 +569,11 @@ Imputación para Weather
         rounded_lon,
         Order_Date,
         Weather;
-    ```
+```
 
-    2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
+* Paso 2: Encontrar el conteo máximo para cada grupo (moda)
 
-    
+```SQL    
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_max_counts AS
     SELECT
         rounded_lat,
@@ -587,11 +586,11 @@ Imputación para Weather
         rounded_lat,
         rounded_lon,
         Order_Date;
-    
+```
 
-    3. Paso 3: Obtener la moda de Weather por grupo
+* Paso 3: Obtener la moda de Weather por grupo
 
-    
+```SQL  
     CREATE TEMPORARY TABLE IF NOT EXISTS final_weather_modes AS
     SELECT
         twc.rounded_lat,
@@ -606,11 +605,11 @@ Imputación para Weather
         twc.rounded_lon = tmc.rounded_lon AND
         twc.Order_Date = tmc.Order_Date AND
         twc.cnt = tmc.max_cnt;
-    
+```
 
-    4. Paso 4: Actualizar la tabla original amazon con los valores imputados
+* Paso 4: Actualizar la tabla original amazon con los valores imputados
 
-    
+```SQL  
     UPDATE amazon a
     JOIN final_weather_modes fwm ON
         ROUND(a.Drop_Latitude, @lat_precision) = fwm.rounded_lat AND
@@ -620,32 +619,32 @@ Imputación para Weather
         a.Weather = fwm.Weather
     WHERE
         a.Weather IS NULL;
-    
+```
 
-    5. Limpiar tablas temporales:
+* Limpiar tablas temporales:
 
-    
+```SQL  
     DROP TEMPORARY TABLE IF EXISTS temp_weather_counts;
     DROP TEMPORARY TABLE IF EXISTS temp_max_counts;
     DROP TEMPORARY TABLE IF EXISTS final_weather_modes;
-    
+```
 
-    * Verificar la cantidad de nulos en Weather después de la imputación:
+* Verificar la cantidad de nulos en Weather después de la imputación:
 
-    
+```SQL 
     SELECT
         SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather
     FROM
         amazon;
-
+```
 
 Imputación para Traffic
 
 El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda del tráfico en zonas y fechas similares.
 
-    1. Paso 1: Crear tabla temporal con conteos de Traffic por zona y fecha
+* Paso 1: Crear tabla temporal con conteos de Traffic por zona y fecha
 
-    ```SQL
+```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_traffic_counts AS
     SELECT
         ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
@@ -662,11 +661,11 @@ El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda d
         rounded_lon,
         Order_Date,
         Traffic;
-    ```
+```
 
-    2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
+* Paso 2: Encontrar el conteo máximo para cada grupo (moda)
 
-    ```SQL
+```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS temp_max_counts AS
     SELECT
         rounded_lat,
@@ -679,11 +678,11 @@ El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda d
         rounded_lat,
         rounded_lon,
         Order_Date;
-    ```
+```
 
-    3. Paso 3: Obtener la moda de Traffic por grupo
+* Paso 3: Obtener la moda de Traffic por grupo
 
-    ```SQL
+```SQL
     CREATE TEMPORARY TABLE IF NOT EXISTS final_traffic_modes AS
     SELECT
         twc.rounded_lat,
@@ -698,11 +697,11 @@ El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda d
         twc.rounded_lon = tmc.rounded_lon AND
         twc.Order_Date = tmc.Order_Date AND
         twc.cnt = tmc.max_cnt;
-    ```
+```
 
-    4. Paso 4: Actualizar la tabla original amazon con los valores imputados
+* Paso 4: Actualizar la tabla original amazon con los valores imputados
 
-    ```SQL
+```SQL
     UPDATE amazon a
     JOIN final_traffic_modes fwm ON
         ROUND(a.Drop_Latitude, @lat_precision) = fwm.rounded_lat AND
@@ -712,26 +711,26 @@ El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda d
         a.Traffic = fwm.Traffic
     WHERE
         a.Traffic IS NULL;
-    ```
+```
 
-    5. Limpiar tablas temporales:
+* Limpiar tablas temporales:
 
-    ```SQL
+```SQL
     DROP TEMPORARY TABLE IF EXISTS temp_traffic_counts;
     DROP TEMPORARY TABLE IF EXISTS temp_max_counts;
     DROP TEMPORARY TABLE IF EXISTS final_traffic_modes;
-    ```
+```
 
-    * Verificar la cantidad de nulos en Traffic después de la imputación:
+* Verificar la cantidad de nulos en Traffic después de la imputación:
 
-    ```SQL
+```SQL
     SELECT
         COUNT(*) AS nulos_Traffic
     FROM
         amazon
     WHERE
         Traffic IS NULL;
-    ```
+```
 
 13. Eliminación de Valores Nulos Restantes
 Después de los intentos de imputación, se eliminan los registros que aún contienen valores NULL en las columnas Weather y Traffic, ya que no pudieron ser imputados con la estrategia definida.
