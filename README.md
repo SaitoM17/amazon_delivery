@@ -425,7 +425,7 @@ HAVING
     COUNT(*) > 1;
 ```
 
-9. Verificación de la Estructura y Datos Finales (Parte 1)
+9. Verificación de la Estructura y Datos Finales
 Finalmente, se revisa la estructura de la tabla y se visualizan las primeras filas para confirmar que todas las transformaciones de esta primera parte se hayan aplicado correctamente.
 
 ```SQL
@@ -440,6 +440,324 @@ FROM
 LIMIT
     10;
 ```
+
+10. Verificación Inicial de Registros y Nulos
+Antes de proceder con la imputación, se realiza una verificación para conocer el volumen total de registros y la cantidad de nulos presentes en las columnas objetivo.
+
+* Conteo total de registros:
+```SQL
+SELECT
+    COUNT(*) AS cant_registro
+FROM
+    amazon;
+```
+> Resultado: 43685 registros.
+
+* Identificación de registros con nulos en columnas clave:
+```SQL
+SELECT
+    *
+FROM
+    amazon
+WHERE
+    Order_Time IS NULL
+OR
+    Weather IS NULL
+OR
+    Traffic IS NULL;
+```
+
+* Conteo específico de nulos por columna:
+```SQL
+SELECT
+    SUM(CASE WHEN Order_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Time,
+    SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather,
+    SUM(CASE WHEN Traffic IS NULL THEN 1 ELSE 0 END) AS nulos_Traffic
+FROM
+    amazon;
+```
+
+11. Imputación de Datos en Order_Time
+La imputación de Order_Time se realiza estimando el tiempo de pedido basándose en la diferencia promedio entre Pickup_Time y Order_Time para los registros completos.
+
+* Paso 1: Calcular el promedio de la diferencia de tiempo
+Se calcula la diferencia promedio en segundos entre Pickup_Time y Order_Time para todos los registros donde ambos valores son válidos y Order_Time es anterior o igual a Pickup_Time.
+
+```SQL
+SET @promedio_delta_segundos = (
+    SELECT AVG(TIME_TO_SEC(TIMEDIFF(Pickup_Time, Order_Time)))
+    FROM amazon
+    WHERE Order_Time IS NOT NULL
+      AND Order_Time <= Pickup_Time
+);
+```
+
+* Paso 2: Actualizar registros con Order_Time nulo
+Se actualiza Order_Time restando el promedio_delta_segundos al Pickup_Time de los registros donde Order_Time es NULL.
+
+```SQL
+UPDATE amazon
+SET Order_Time = DATE_SUB(Pickup_Time, INTERVAL @promedio_delta_segundos SECOND)
+WHERE Order_Time IS NULL;
+````
+Verificar la cantidad de nulos en Order_Time después de la imputación:
+```SQL
+SELECT
+    SUM(CASE WHEN Order_Time IS NULL THEN 1 ELSE 0 END) AS nulos_Order_Time
+FROM
+    amazon;
+```
+
+* Paso 3: Revisar y corregir valores negativos en Order_Time
+Se identifican y corrigen los casos donde Order_Time pudo haber resultado en un valor negativo (antes de medianoche) debido a la imputación, especialmente si Pickup_Time era 00:00:00.
+
+```SQL
+-- Conteo de valores negativos
+SELECT
+    COUNT(*)
+FROM
+    amazon
+WHERE
+    Order_Time < '00:00:00';
+```
+
+```SQL
+-- Identificación de registros con valores negativos
+SELECT
+    *
+FROM
+    amazon
+WHERE
+    Order_Time < '00:00:00';
+```
+
+```SQL
+-- Corrección de valores negativos
+UPDATE amazon
+SET Order_Time = '00:00:00'
+WHERE Order_Time < '00:00:00'
+  AND Pickup_Time = '00:00:00';
+```
+
+12. Imputación para Weather y Traffic
+Para imputar Weather y Traffic, se utiliza una estrategia basada en la moda (el valor más frecuente) de estas columnas dentro de "vecindarios" definidos por la latitud y longitud redondeadas, y la fecha del pedido. Esto asume que el clima y el tráfico son similares en ubicaciones y fechas cercanas.
+
+Se definen variables para la precisión del redondeo de las coordenadas:
+```SQL
+SET @lat_precision = 2; -- Ej: Redondear a 2 decimales (aprox. 1.1 km de 'vecindario')
+SET @lon_precision = 2; -- Ej: Redondear a 2 decimales
+```
+
+Imputación para Weather
+    1. Paso 1: Crear tabla temporal con conteos de Weather por zona y fecha
+
+    ```sql
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_weather_counts AS
+    SELECT
+        ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
+        ROUND(Drop_Longitude, @lon_precision) AS rounded_lon,
+        Order_Date,
+        Weather,
+        COUNT(*) AS cnt
+    FROM
+        amazon
+    WHERE
+        Weather IS NOT NULL
+    GROUP BY
+        rounded_lat,
+        rounded_lon,
+        Order_Date,
+        Weather;
+    ```
+
+    2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
+
+    ```SQL
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_max_counts AS
+    SELECT
+        rounded_lat,
+        rounded_lon,
+        Order_Date,
+        MAX(cnt) AS max_cnt
+    FROM
+        temp_weather_counts
+    GROUP BY
+        rounded_lat,
+        rounded_lon,
+        Order_Date;
+    ```
+
+    3. Paso 3: Obtener la moda de Weather por grupo
+
+    ```SQL
+    CREATE TEMPORARY TABLE IF NOT EXISTS final_weather_modes AS
+    SELECT
+        twc.rounded_lat,
+        twc.rounded_lon,
+        twc.Order_Date,
+        twc.Weather
+    FROM
+        temp_weather_counts twc
+    JOIN
+        temp_max_counts tmc ON
+        twc.rounded_lat = tmc.rounded_lat AND
+        twc.rounded_lon = tmc.rounded_lon AND
+        twc.Order_Date = tmc.Order_Date AND
+        twc.cnt = tmc.max_cnt;
+    ```
+
+    4. Paso 4: Actualizar la tabla original amazon con los valores imputados
+
+    ```SQL
+    UPDATE amazon a
+    JOIN final_weather_modes fwm ON
+        ROUND(a.Drop_Latitude, @lat_precision) = fwm.rounded_lat AND
+        ROUND(a.Drop_Longitude, @lon_precision) = fwm.rounded_lon AND
+        a.Order_Date = fwm.Order_Date
+    SET
+        a.Weather = fwm.Weather
+    WHERE
+        a.Weather IS NULL;
+    ```
+
+    5. Limpiar tablas temporales:
+
+    ```SQL
+    DROP TEMPORARY TABLE IF EXISTS temp_weather_counts;
+    DROP TEMPORARY TABLE IF EXISTS temp_max_counts;
+    DROP TEMPORARY TABLE IF EXISTS final_weather_modes;
+    ```
+
+    * Verificar la cantidad de nulos en Weather después de la imputación:
+
+    ```SQL
+    SELECT
+        SUM(CASE WHEN Weather IS NULL THEN 1 ELSE 0 END) AS nulos_Weather
+    FROM
+        amazon;
+    ```
+Imputación para Traffic
+El proceso para imputar Traffic es idéntico al de Weather, utilizando la moda del tráfico en zonas y fechas similares.
+
+    1. Paso 1: Crear tabla temporal con conteos de Traffic por zona y fecha
+
+    ```SQL
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_traffic_counts AS
+    SELECT
+        ROUND(Drop_Latitude, @lat_precision) AS rounded_lat,
+        ROUND(Drop_Longitude, @lon_precision) AS rounded_lon,
+        Order_Date,
+        Traffic,
+        COUNT(*) AS cnt
+    FROM
+        amazon
+    WHERE
+        Traffic IS NOT NULL
+    GROUP BY
+        rounded_lat,
+        rounded_lon,
+        Order_Date,
+        Traffic;
+    ```
+
+    2. Paso 2: Encontrar el conteo máximo para cada grupo (moda)
+
+    ```SQL
+    CREATE TEMPORARY TABLE IF NOT EXISTS temp_max_counts AS
+    SELECT
+        rounded_lat,
+        rounded_lon,
+        Order_Date,
+        MAX(cnt) AS max_cnt
+    FROM
+        temp_traffic_counts
+    GROUP BY
+        rounded_lat,
+        rounded_lon,
+        Order_Date;
+    ```
+
+    3. Paso 3: Obtener la moda de Traffic por grupo
+
+    ```SQL
+    CREATE TEMPORARY TABLE IF NOT EXISTS final_traffic_modes AS
+    SELECT
+        twc.rounded_lat,
+        twc.rounded_lon,
+        twc.Order_Date,
+        twc.Traffic
+    FROM
+        temp_traffic_counts twc
+    JOIN
+        temp_max_counts tmc ON
+        twc.rounded_lat = tmc.rounded_lat AND
+        twc.rounded_lon = tmc.rounded_lon AND
+        twc.Order_Date = tmc.Order_Date AND
+        twc.cnt = tmc.max_cnt;
+    ```
+
+    4. Paso 4: Actualizar la tabla original amazon con los valores imputados
+
+    ```SQL
+    UPDATE amazon a
+    JOIN final_traffic_modes fwm ON
+        ROUND(a.Drop_Latitude, @lat_precision) = fwm.rounded_lat AND
+        ROUND(a.Drop_Longitude, @lon_precision) = fwm.rounded_lon AND
+        a.Order_Date = fwm.Order_Date
+    SET
+        a.Traffic = fwm.Traffic
+    WHERE
+        a.Traffic IS NULL;
+    ```
+
+    5. Limpiar tablas temporales:
+
+    ```SQL
+    DROP TEMPORARY TABLE IF EXISTS temp_traffic_counts;
+    DROP TEMPORARY TABLE IF EXISTS temp_max_counts;
+    DROP TEMPORARY TABLE IF EXISTS final_traffic_modes;
+    ```
+
+    * Verificar la cantidad de nulos en Traffic después de la imputación:
+
+    ```SQL
+    SELECT
+        COUNT(*) AS nulos_Traffic
+    FROM
+        amazon
+    WHERE
+        Traffic IS NULL;
+    ```
+
+13. Eliminación de Valores Nulos Restantes
+Después de los intentos de imputación, se eliminan los registros que aún contienen valores NULL en las columnas Weather y Traffic, ya que no pudieron ser imputados con la estrategia definida.
+
+* Revisar los registros con nulos restantes:
+```SQL
+SELECT * FROM amazon WHERE Weather IS NULL;
+SELECT * FROM amazon WHERE Traffic IS NULL;
+```
+
+* Eliminar registros con nulos en Weather:
+```SQL
+DELETE FROM amazon
+WHERE Weather IS NULL;
+```
+
+* Eliminar registros con nulos en Traffic:
+```SQL
+DELETE FROM amazon
+WHERE Traffic IS NULL;
+```
+
+* Revisar la cantidad de registros después de la eliminación:
+```SQL
+SELECT
+    COUNT(*) AS cant_registro
+FROM
+    amazon;
+```
+Resultado: La cantidad de registros pasó de 43685 a 43644.
 
 4. **Análisis exploratorio de datos (EDA)**:
    - [Ej. Distribución, correlaciones, agrupaciones, etc.]
