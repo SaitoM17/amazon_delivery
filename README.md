@@ -1852,9 +1852,10 @@ Name: Order_ID, dtype: int64
 
 Se realizan agregaciones para identificar patrones de entregas desafiantes por área y franja horaria, así como por bins geográficos (latitud/longitud redondeada).
 
-    * Desafíos por Área y Franja Horaria:
+* Desafíos por Área y Franja Horaria:
         
-        Se agrupa el DataFrame por Area y Delivery_Time_Slot para calcular el tiempo promedio de entrega, el número de entregas desafiantes y el total de entregas, además del porcentaje de entregas desafiantes.
+    Se agrupa el DataFrame por Area y Delivery_Time_Slot para calcular el tiempo promedio de entrega, el número de entregas desafiantes y el total de entregas, además del porcentaje de entregas desafiantes.
+
 ```Python
 challenges_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
     Avg_Delivery_Time=('Delivery_Time', 'mean'),
@@ -1869,9 +1870,9 @@ avg_time_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_S
     Avg_Delivery_Time_Minutes=('Delivery_Time', 'mean')).reset_index()
 ```
 
-    * Desafíos por Bins Geográficos:
+* Desafíos por Bins Geográficos:
         
-        Se crean bins geográficos redondeando la latitud y longitud de entrega para identificar zonas geográficas más pequeñas con desafíos.
+    Se crean bins geográficos redondeando la latitud y longitud de entrega para identificar zonas geográficas más pequeñas con desafíos.
 
 ```Python
 df_amazon_delivery['Lat_Bin'] = df_amazon_delivery['Drop_Latitude'].round(2)
