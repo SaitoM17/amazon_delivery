@@ -1855,37 +1855,36 @@ Se realizan agregaciones para identificar patrones de entregas desafiantes por �
     * Desafíos por Área y Franja Horaria:
         
         Se agrupa el DataFrame por Area y Delivery_Time_Slot para calcular el tiempo promedio de entrega, el número de entregas desafiantes y el total de entregas, además del porcentaje de entregas desafiantes.
+```Python
+challenges_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
+    Avg_Delivery_Time=('Delivery_Time', 'mean'),
+    Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
+    Total_Deliveries=('Order_ID', 'count')).reset_index()
 
-        ```Python
-        challenges_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
-            Avg_Delivery_Time=('Delivery_Time', 'mean'),
-            Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
-            Total_Deliveries=('Order_ID', 'count')).reset_index()
+challenges_by_area_timeslot['Percentage_Challenging'] = (
+    challenges_by_area_timeslot['Num_Challenging_Deliveries'] / challenges_by_area_timeslot['Total_Deliveries']) * 100
 
-        challenges_by_area_timeslot['Percentage_Challenging'] = (
-            challenges_by_area_timeslot['Num_Challenging_Deliveries'] / challenges_by_area_timeslot['Total_Deliveries']) * 100
-
-        # También podemos ver el tiempo promedio por zona y franja horaria directamente
-        avg_time_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
-            Avg_Delivery_Time_Minutes=('Delivery_Time', 'mean')).reset_index()
-        ```
+# También podemos ver el tiempo promedio por zona y franja horaria directamente
+avg_time_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
+    Avg_Delivery_Time_Minutes=('Delivery_Time', 'mean')).reset_index()
+```
 
     * Desafíos por Bins Geográficos:
         
         Se crean bins geográficos redondeando la latitud y longitud de entrega para identificar zonas geográficas más pequeñas con desafíos.
 
-        ```Python
-        df_amazon_delivery['Lat_Bin'] = df_amazon_delivery['Drop_Latitude'].round(2)
-        df_amazon_delivery['Lon_Bin'] = df_amazon_delivery['Drop_Longitude'].round(2)
+```Python
+df_amazon_delivery['Lat_Bin'] = df_amazon_delivery['Drop_Latitude'].round(2)
+df_amazon_delivery['Lon_Bin'] = df_amazon_delivery['Drop_Longitude'].round(2)
 
-        challenges_by_geo_bin = df_amazon_delivery.groupby(['Lat_Bin', 'Lon_Bin']).agg(
-            Avg_Delivery_Time=('Delivery_Time', 'mean'),
-            Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
-            Total_Deliveries=('Order_ID', 'count')).reset_index()
+challenges_by_geo_bin = df_amazon_delivery.groupby(['Lat_Bin', 'Lon_Bin']).agg(
+    Avg_Delivery_Time=('Delivery_Time', 'mean'),
+    Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
+    Total_Deliveries=('Order_ID', 'count')).reset_index()
 
-        challenges_by_geo_bin['Percentage_Challenging'] = (
-            challenges_by_geo_bin['Num_Challenging_Deliveries'] / challenges_by_geo_bin['Total_Deliveries']) * 100
-        ```
+challenges_by_geo_bin['Percentage_Challenging'] = (
+    challenges_by_geo_bin['Num_Challenging_Deliveries'] / challenges_by_geo_bin['Total_Deliveries']) * 100
+```
 
 > Propósito: Estas agregaciones son fundamentales para identificar los puntos críticos en la operación de entrega, permitiendo a la empresa enfocar recursos en áreas y momentos específicos para mejorar la eficiencia.
 
