@@ -1914,6 +1914,383 @@ Los siguientes enlaces corresponden a los dashboards interactivos creados en Tab
 * [Amazon_Delivery_Parte1](https://public.tableau.com/app/profile/said.mariano/viz/Amazon_Delivery_Parte1/PromediodeTiempodeEntregaporFranjaHoraria)
 * [Amazon_Delivery_Parte2](https://public.tableau.com/app/profile/said.mariano/viz/Amazon_Delivery_Parte2/MapadeCalorCruzadoPromediodeTiempodeEntregaporreayFranjaHoraria)
 
+##### **3. Reconocer el desempeño individual de los repartidores, destacando los más eficientes y detectando áreas de mejora**
+
+* Promedio de Tiempo de Entrega por Calificación de Agente
+
+Se visualiza el tiempo promedio de entrega en relación con la calificación de cada agente. Este gráfico de barras ayuda a identificar rápidamente si existe una correlación entre una mejor calificación y tiempos de entrega más cortos.
+
+```Python
+agente_tiempo_entrega_promedio_ordenado = agente_tiempo_entrega_promedio.sort_values(by='Delivery_Time', ascending=False)
+
+plt.figure(figsize=(19,8))
+order_of_bars = agente_tiempo_entrega_promedio_ordenado.index
+ax = sns.barplot(x='Agent_Rating',
+                 y='Delivery_Time',
+                 data=agente_tiempo_entrega_promedio_ordenado.reset_index(),
+                 order=order_of_bars,
+                 hue='Agent_Rating',
+                 palette='viridis')
+
+plt.title('Promedio de Tiempo de Entrega por Calificación de Agente')
+plt.xlabel('Puntaje del Agente')
+plt.ylabel('Promedio de Tiempo (Minutos)')
+plt.xticks(rotation=45, ha='right')
+
+# Agregar valors encima de las barras
+for p in ax.patches:
+    ax.annotate(f'{p.get_height():.00f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha='center', va='center', xytext=(0, 10), textcoords='offset points')
+
+plt.legend().remove()
+plt.tight_layout()
+plt.show()
+```
+
+![Promedio de Tiempo de Entregas por Calificación de Agente](reports/figures/Promedio de Tiempo por Calificacion de Agente.png)
+
+> Análisis: Como se había observado anteriormente en la 'Tabla Dinámica por Agent_Rating en el Tiempo de Entregas', los datos sugieren una clara relación inversa entre la calificación del agente y el tiempo de entrega. Generalmente, los agentes con calificaciones más altas tienden a tener tiempos de entrega promedio más bajos, con la notable excepción de un agente con una calificación de 1.0 que, a pesar de su baja calificación, muestra un tiempo promedio de entrega relativamente bajo (132 minutos). Esto podría indicar un caso atípico o una baja cantidad de pedidos para ese agente específico.
+
+* Porcentaje de Entregas Desafiantes por Calificación de Agente
+
+Este análisis calcula el porcentaje de entregas desafiantes (aquellas que superan el umbral de tiempo) para cada calificación de agente. Es crucial para entender qué calificaciones están asociadas con una mayor proporción de entregas problemáticas.
+
+```Python
+porcentaje_entregas_desafientes_agente = pd.pivot_table(
+    df_amazon_delivery,
+    values=['Is_Challenging_Delivery', 'Order_ID'],
+    index='Agent_Rating',
+    aggfunc={
+        'Is_Challenging_Delivery': 'sum',
+        'Order_ID': 'count'
+    })
+
+porcentaje_entregas_desafientes_agente['Ratio_Challenging_to_Total_Orders'] = \
+    porcentaje_entregas_desafientes_agente['Is_Challenging_Delivery'] / porcentaje_entregas_desafientes_agente['Order_ID']
+
+porcentaje_entregas_desafientes_agente_ordenado = porcentaje_entregas_desafientes_agente.sort_values(by='Ratio_Challenging_to_Total_Orders', ascending=False)
+
+plt.figure(figsize=(19,6))
+# Obtener el orden de las categorías de Agent_Rating del índice de prueba_1
+order_of_bars = porcentaje_entregas_desafientes_agente_ordenado.index
+ax = sns.barplot(x='Agent_Rating',
+                 y='Ratio_Challenging_to_Total_Orders',
+                 data=porcentaje_entregas_desafientes_agente,
+                 order=order_of_bars,
+                 hue='Agent_Rating',
+                 palette='viridis',
+                 legend=False)
+
+plt.title('Porcentaje de Entregas Desafiantes por Calificación de Agente')
+plt.xlabel('Agent Ranking')
+plt.ylabel('Porcentaje de Entregas Desafiantes')
+plt.xticks(rotation=45, ha='right')
+plt.ylim(0,1)
+# Agregar valores encima de las barras
+for p in ax.patches:
+    ax.annotate(f'{p.get_height():.3f}', (p.get_x() + p.get_width() / 2., p.get_height()),
+                ha='center', va='center', xytext=(0, 10), textcoords='offset points')
+
+plt.tight_layout()
+plt.show()
+```
+
+![Porcentaje de entregas desafiantes por calificación del agente](reports/figures/porcentaje_de_entregas_desafiantes_calificacion_de_agente_ordenado.png)
+
+> Análisis: Contrario a lo que se podría intuir inicialmente, los agentes con calificaciones más altas (por ejemplo, 4.1, 3.7, 4.2, 4.4, 4.0, 3.1, 3.9) son los que presentan un mayor porcentaje de entregas desafiantes. Este es un hallazgo crítico e inesperado, ya que uno esperaría que los agentes mejor calificados tuvieran menos problemas de entrega.
+>
+>Los agentes con calificaciones muy bajas o intermedias (por ejemplo, 2.7, 2.8, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 2.9, 3.0) tienen un porcentaje de entregas desafiantes mucho menor, e incluso del 0% en algunos casos (2.7, 2.8, 3.0). Si asumimos que una calificación de agente más alta (por ejemplo, 4.0, 4.5, 5.0) debería indicar un mejor rendimiento general, este gráfico sugiere que para el aspecto del "tiempo de entrega desafiante", la relación es inversa o, al menos, no lineal. Los agentes con calificaciones promedio-altas (4.0-4.4) son los que consistentemente tienen un porcentaje de entregas desafiantes por encima del 10%.
+
+* Calificación vs. Promedio de Tiempo y Volumen de Pedidos
+
+Este gráfico de dispersión (scatterplot) visualiza la relación entre la calificación del agente, el tiempo promedio de entrega y el volumen de pedidos manejado por cada calificación. El tamaño de los puntos representa el volumen de pedidos.
+
+```Python
+agente_tiempo_entrega_promedio_volumen_pedidos = pd.pivot_table(
+    df_amazon_delivery,
+    values=['Delivery_Time', 'Order_ID'],
+    index='Agent_Rating',
+    aggfunc={'Delivery_Time': 'mean', 'Order_ID': 'count'})
+
+agente_tiempo_entrega_promedio_volumen_pedidos = agente_tiempo_entrega_promedio_volumen_pedidos.rename(
+    columns={'Order_ID': 'Order_Volume'})
+
+agente_tiempo_entrega_promedio_volumen_pedidos = agente_tiempo_entrega_promedio_volumen_pedidos.reset_index()
+
+plt.figure(figsize=(14, 6))
+sns.scatterplot(
+    x='Agent_Rating',
+    y='Delivery_Time',
+    data=agente_tiempo_entrega_promedio_volumen_pedidos,
+    hue='Agent_Rating',
+    size='Order_Volume',
+    sizes=(50, 1000),
+    palette='viridis',
+    legend='brief'
+)
+plt.title('Calificación del Agente vs. Promedio de Tiempo de Entrega y Volumen de Pedidos')
+plt.xlabel('Calificación del Agente')
+plt.ylabel('Promedio de Tiempo de Entrega')
+plt.xticks(rotation=45, ha='right')
+plt.ylim(100, 200)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.show()
+```
+![Calificación vs. Promedio de Tiempo y Volumen de pedidos][reports/figures/calificacion_agente_vs_promedio_tiempo_volumen_pedidos.png]
+
+> Análisis: Los agentes con baja calificación y alto tiempo de entrega promedio no son los principales responsables del volumen total de desafíos. Representan un "problema de eficiencia" individual, pero no un "problema de volumen" a gran escala. Por ejemplo, la calificación 1.0 tiene un tiempo de entrega alto (aproximadamente 132 minutos) pero es una burbuja muy pequeña, lo que indica un bajo volumen de pedidos.
+>
+> Las calificaciones de agente más altas (color verde/amarillo, por ejemplo, 4.0, 5.0) se agrupan en la parte inferior del gráfico (menor Promedio de Tiempo de Entrega). Esto sugiere que, en general, son más eficientes en términos de tiempo promedio. A pesar de tener un promedio de tiempo de entrega más bajo, debido a su alto volumen de pedidos, incluso un pequeño porcentaje de entregas desafiantes (como se vio en el gráfico anterior) de estos agentes podría traducirse en un número absoluto muy alto de entregas desafiantes.
+>
+> Los agentes con baja calificación (por ejemplo, 1.0, 2.0, 3.0) no manejan un alto volumen de pedidos. Aunque su tiempo promedio de entrega es alto, su bajo volumen significa que su contribución al número total de entregas desafiantes probablemente es menor. Son problemas de eficiencia a nivel individual.
+>
+> Los agentes con calificaciones más altas (por ejemplo, 4.0, 5.0), aunque tienen un tiempo de entrega promedio más bajo, sí manejan un volumen masivo de pedidos. Si, como se vio en el gráfico anterior, un porcentaje significativo de sus entregas son desafiantes, entonces son ellos los que, por el puro volumen, contribuyen en mayor medida al número absoluto de entregas desafiantes generales.
+
+* Resumen por Calificación de Agente
+
+Esta tabla dinámica resume las métricas clave por calificación de agente: número total de pedidos, tiempo promedio de entrega, número de entregas desafiantes y el porcentaje de entregas desafiantes.
+
+```Python
+resumen_calificacion_agente = pd.pivot_table(df_amazon_delivery,
+                                             values=['Order_ID', 'Delivery_Time', 'Is_Challenging_Delivery'],
+                                             index=['Agent_Rating'],
+                                             aggfunc={'Order_ID': 'count',
+                                                      'Delivery_Time':'mean',
+                                                      'Is_Challenging_Delivery':'sum'})
+
+resumen_calificacion_agente['Porcentaje_Desafiante'] = \
+    resumen_calificacion_agente['Is_Challenging_Delivery'] / resumen_calificacion_agente['Order_ID']
+
+resumen_calificacion_agente = resumen_calificacion_agente.rename(
+    columns={'Order_ID': 'Número_Total_Pedidos'
+             ,'Delivery_Time':'Promedio_Tiempo',
+             'Is_Challenging_Delivery':'Número_Desafios'})
+
+resumen_calificacion_agente
+```
+
+Salida:
+
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Promedio_Tiempo</th>
+      <th>Número_Desafios</th>
+      <th>Número_Total_Pedidos</th>
+      <th>Porcentaje_Desafiante</th>
+    </tr>
+    <tr>
+      <th>Agent_Rating</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>1.0</th>
+      <td>132.045455</td>
+      <td>1</td>
+      <td>22</td>
+      <td>0.045455</td>
+    </tr>
+    <tr>
+      <th>2.5</th>
+      <td>180.300000</td>
+      <td>2</td>
+      <td>20</td>
+      <td>0.100000</td>
+    </tr>
+    <tr>
+      <th>2.6</th>
+      <td>172.772727</td>
+      <td>2</td>
+      <td>22</td>
+      <td>0.090909</td>
+    </tr>
+    <tr>
+      <th>2.7</th>
+      <td>179.318182</td>
+      <td>0</td>
+      <td>22</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2.8</th>
+      <td>168.842105</td>
+      <td>0</td>
+      <td>19</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>2.9</th>
+      <td>175.578947</td>
+      <td>1</td>
+      <td>19</td>
+      <td>0.052632</td>
+    </tr>
+    <tr>
+      <th>3.0</th>
+      <td>163.333333</td>
+      <td>0</td>
+      <td>6</td>
+      <td>0.000000</td>
+    </tr>
+    <tr>
+      <th>3.1</th>
+      <td>182.758621</td>
+      <td>3</td>
+      <td>29</td>
+      <td>0.103448</td>
+    </tr>
+    <tr>
+      <th>3.2</th>
+      <td>177.172414</td>
+      <td>2</td>
+      <td>29</td>
+      <td>0.068966</td>
+    </tr>
+    <tr>
+      <th>3.3</th>
+      <td>180.200000</td>
+      <td>1</td>
+      <td>25</td>
+      <td>0.040000</td>
+    </tr>
+    <tr>
+      <th>3.4</th>
+      <td>173.468750</td>
+      <td>1</td>
+      <td>32</td>
+      <td>0.031250</td>
+    </tr>
+    <tr>
+      <th>3.5</th>
+      <td>173.040161</td>
+      <td>18</td>
+      <td>249</td>
+      <td>0.072289</td>
+    </tr>
+    <tr>
+      <th>3.6</th>
+      <td>171.357488</td>
+      <td>16</td>
+      <td>207</td>
+      <td>0.077295</td>
+    </tr>
+    <tr>
+      <th>3.7</th>
+      <td>172.773333</td>
+      <td>25</td>
+      <td>225</td>
+      <td>0.111111</td>
+    </tr>
+    <tr>
+      <th>3.8</th>
+      <td>175.328947</td>
+      <td>14</td>
+      <td>228</td>
+      <td>0.061404</td>
+    </tr>
+    <tr>
+      <th>3.9</th>
+      <td>178.284264</td>
+      <td>20</td>
+      <td>197</td>
+      <td>0.101523</td>
+    </tr>
+    <tr>
+      <th>4.0</th>
+      <td>163.881151</td>
+      <td>112</td>
+      <td>1077</td>
+      <td>0.103993</td>
+    </tr>
+    <tr>
+      <th>4.1</th>
+      <td>165.173427</td>
+      <td>159</td>
+      <td>1430</td>
+      <td>0.111189</td>
+    </tr>
+    <tr>
+      <th>4.2</th>
+      <td>165.612835</td>
+      <td>155</td>
+      <td>1418</td>
+      <td>0.109309</td>
+    </tr>
+    <tr>
+      <th>4.3</th>
+      <td>165.139106</td>
+      <td>139</td>
+      <td>1409</td>
+      <td>0.098652</td>
+    </tr>
+    <tr>
+      <th>4.4</th>
+      <td>165.235856</td>
+      <td>145</td>
+      <td>1361</td>
+      <td>0.106539</td>
+    </tr>
+    <tr>
+      <th>4.5</th>
+      <td>112.076294</td>
+      <td>102</td>
+      <td>3303</td>
+      <td>0.030881</td>
+    </tr>
+    <tr>
+      <th>4.6</th>
+      <td>116.644524</td>
+      <td>264</td>
+      <td>6940</td>
+      <td>0.038040</td>
+    </tr>
+    <tr>
+      <th>4.7</th>
+      <td>115.208905</td>
+      <td>233</td>
+      <td>7142</td>
+      <td>0.032624</td>
+    </tr>
+    <tr>
+      <th>4.8</th>
+      <td>113.962927</td>
+      <td>248</td>
+      <td>7148</td>
+      <td>0.034695</td>
+    </tr>
+    <tr>
+      <th>4.9</th>
+      <td>114.763670</td>
+      <td>243</td>
+      <td>7041</td>
+      <td>0.034512</td>
+    </tr>
+    <tr>
+      <th>5.0</th>
+      <td>120.976727</td>
+      <td>178</td>
+      <td>3996</td>
+      <td>0.044545</td>
+    </tr>
+    <tr>
+      <th>6.0</th>
+      <td>111.642857</td>
+      <td>1</td>
+      <td>28</td>
+      <td>0.035714</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
 5. **Visualización de datos**:
    - Uso de gráficos de barras, líneas, cajas, dispersión y mapas de calor.
 
