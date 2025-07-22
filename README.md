@@ -1023,6 +1023,464 @@ Columna con solo la fehca
 Name: Order_Date, dtype: datetime64[ns]
 ```
 
+##### **1. Evaluar la Eficiencia General de las Entregas**
+
+* Tiempo Promedio de Entrega
+
+Se calcula el tiempo promedio que tarda una entrega desde que el pedido es realizado hasta que llega al cliente.
+```Python
+# Calcular el tiempo promedio de entrega (Delivery_Time)
+promedio_delivery_time = np.mean(df_amazon_delivery['Delivery_Time'])
+
+# Convertir el total de minutos a horas y minutos
+horas = int(promedio_delivery_time // 60) # Obtiene la parte entera de las horas
+minutos_restantes = promedio_delivery_time % 60 # Obtiene el resto de minutos
+
+print(f'Promedio del tiempo de entrega (Delivery_Time): {promedio_delivery_time:.2f} minutos')
+print(f'Que equivale a: {horas} horas y {minutos_restantes:.0f} minutos') # Redondea los minutos a un entero
+```
+
+Salida:
+```Bash
+Promedio del tiempo de entrega (Delivery_Time): 124.91 minutos
+Que equivale a: 2 horas y 5 minutos
+```
+
+>Análisis: El tiempo promedio de entrega es de 2 horas y 5 minutos (2:05).
+
+* Tiempo Promedio de Procesamiento del Pedido
+
+Se calcula el tiempo que tarda la tienda o el centro de distribución en preparar el pedido para su recolección por parte del agente de entrega, es decir, la diferencia entre Pickup_Time y Order_Time. Se manejan los casos donde Pickup_Time es anterior a Order_Time (indicando una recogida al día siguiente) sumando un día.
+```Python
+# Calcular el tiempo promedio de procesamiento del pedido (Pickup_Time - Order_Time)
+df_amazon_delivery['Order_Processing_Time'] = df_amazon_delivery['Pickup_Time_TD'] - df_amazon_delivery['Order_Time_TD']
+
+# Si el resultado es negativo, significa que la recogida es "al día siguiente"
+# Por lo tanto, le sumamos un día (24 horas)
+one_day = pd.Timedelta(days=1)
+df_amazon_delivery.loc[df_amazon_delivery['Order_Processing_Time'] < pd.Timedelta(0), 'Order_Processing_Time'] += one_day
+
+promedio_order_processing_time = np.mean(df_amazon_delivery['Order_Processing_Time'])
+promedio_en_segundos = promedio_order_processing_time.total_seconds()
+
+# 2. Calcular los minutos enteros
+minutos = int(promedio_en_segundos // 60)
+# 3. Calcular los segundos restantes y redondearlos al entero más cercano
+segundos = round(promedio_en_segundos % 60)
+
+print(f'Promedio de Procesamiento de la orden del pedido (Order_Processing_Time): {promedio_order_processing_time}')
+print(f'Promedio de Procesamiento de la orden del pedido: {minutos}:{segundos} minutos')
+```
+```Bash
+Salida:
+
+Promedio de Procesamiento de la orden del pedido (Order_Processing_Time): 0 days 00:09:59.446728072
+Promedio de Procesamiento de la orden del pedido: 9:59 minutos
+```
+
+>Análisis: El tiempo que tarda la tienda o el centro de distribución en preparar el pedido para su recolección es de aproximadamente 9 minutos y 59 segundos.
+
+* Porcentaje de Entregas a Tiempo
+
+Se calcula el porcentaje de entregas que se consideran "a tiempo" basándose en un umbral determinado por el percentil 95 del tiempo de entrega histórico. Esto permite definir "a tiempo" de una manera que se ajusta al comportamiento real de las entregas.
+```Python
+# Calcular el porcentaje de entregas a tiempo (Número de entregas a tiempo / Número total de entregas * 100)
+# Porcentaje de las entregas que queremos que se consideren "a tiempo"
+# Encontrar el tiempo por debajo del cual está el 95% de las entregas
+percentil_deseado = 95 # Calcular el Percentil
+umbral_calculado = df_amazon_delivery['Delivery_Time'].quantile(percentil_deseado / 100)
+
+print(f'Basado en el {percentil_deseado}% de tus entregas históricas:')
+print(f'El {percentil_deseado}º percentil del tiempo de entrega es: {umbral_calculado:.2f} minutos')
+
+numero_entregas_a_tiempo = len(df_amazon_delivery[df_amazon_delivery['Delivery_Time'] <= umbral_calculado])
+numero_total_entregas = len(df_amazon_delivery)
+porcentaje_entregas_a_tiempo = (numero_entregas_a_tiempo / numero_total_entregas) * 100
+
+print(f'\nUsando {umbral_calculado:.2f} minutos como umbral de "a tiempo":')
+print(f'Número de entregas a tiempo: {numero_entregas_a_tiempo}')
+print(f'Número total de entregas: {numero_total_entregas}')
+print(f'Porcentaje de Entregas a Tiempo (con umbral basado en datos): {porcentaje_entregas_a_tiempo:.2f}%')
+```
+```Bash
+Salida:
+
+Basado en el 95% de tus entregas históricas:
+El 95º percentil del tiempo de entrega es: 215.00 minutos
+
+Usando 215.00 minutos como umbral de "a tiempo":
+Número de entregas a tiempo: 41559
+Número total de entregas: 43644
+Porcentaje de Entregas a Tiempo (con umbral basado en datos): 95.22%
+```
+
+>Análisis: El 95.22% de los clientes esperan (y reciben) su pedido en 215 minutos (3 horas y 35 minutos). "Se utiliza esta medida ya que no existe una parametros (tiempo estimado de "Entregas a tiempo")
+
+* Distancia Promedio de Entregas
+
+Se calcula la distancia en kilómetros entre la ubicación de la tienda (Store_Latitude, Store_Longitude) y el punto de entrega (Drop_Latitude, Drop_Longitude) utilizando la fórmula de Haversine. Esta distancia es un factor clave que influye en el tiempo de entrega.
+```Python
+def haversine_vector(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Radio de la Tierra en kilómetros
+    lat1 = np.radians(lat1)
+    lat2 = np.radians(lat2)
+    delta_lat = np.radians(lat2 - lat1)
+    delta_lon = np.radians(lon2 - lon1)
+
+    a = np.sin(delta_lat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(delta_lon / 2)**2
+    c = 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
+    return R * c
+
+# Calcular en lote
+df_amazon_delivery["Distance_km"] = haversine_vector(
+    df_amazon_delivery["Store_Latitude"],
+    df_amazon_delivery["Store_Longitude"],
+    df_amazon_delivery["Drop_Latitude"],
+    df_amazon_delivery["Drop_Longitude"])
+
+df_amazon_delivery.head(5)
+```
+
+Salida (ejemplo de df_amazon_delivery.head(5) con la nueva columna):
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Order_ID</th>
+      <th>Agent_Age</th>
+      <th>Agent_Rating</th>
+      <th>Store_Latitude</th>
+      <th>Store_Longitude</th>
+      <th>Drop_Latitude</th>
+      <th>Drop_Longitude</th>
+      <th>Weather</th>
+      <th>Traffic</th>
+      <th>Vehicle</th>
+      <th>Area</th>
+      <th>Delivery_Time</th>
+      <th>Category</th>
+      <th>Order_Time</th>
+      <th>Pickup_Time</th>
+      <th>Order_Date</th>
+      <th>Order_Time_TD</th>
+      <th>Pickup_Time_TD</th>
+      <th>Order_Processing_Time</th>
+      <th>Distance_km</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ialx566343618</td>
+      <td>37</td>
+      <td>4.9</td>
+      <td>22.745049</td>
+      <td>75.892471</td>
+      <td>22.765049</td>
+      <td>75.912471</td>
+      <td>Sunny</td>
+      <td>High</td>
+      <td>motorcycle</td>
+      <td>Urban</td>
+      <td>120</td>
+      <td>Clothing</td>
+      <td>11:30:00</td>
+      <td>11:45:00</td>
+      <td>2022-03-19</td>
+      <td>0 days 11:30:00</td>
+      <td>0 days 11:45:00</td>
+      <td>0 days 00:15:00</td>
+      <td>2.051173</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>akqg208421122</td>
+      <td>34</td>
+      <td>4.5</td>
+      <td>12.913041</td>
+      <td>77.683237</td>
+      <td>13.043041</td>
+      <td>77.813237</td>
+      <td>Stormy</td>
+      <td>Jam</td>
+      <td>scooter</td>
+      <td>Metropolitian</td>
+      <td>165</td>
+      <td>Electronics</td>
+      <td>19:45:00</td>
+      <td>19:50:00</td>
+      <td>2022-03-25</td>
+      <td>0 days 19:45:00</td>
+      <td>0 days 19:50:00</td>
+      <td>0 days 00:05:00</td>
+      <td>14.088346</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>njpu434582536</td>
+      <td>23</td>
+      <td>4.4</td>
+      <td>12.914264</td>
+      <td>77.678400</td>
+      <td>12.924264</td>
+      <td>77.688400</td>
+      <td>Sandstorms</td>
+      <td>Low</td>
+      <td>motorcycle</td>
+      <td>Urban</td>
+      <td>130</td>
+      <td>Sports</td>
+      <td>08:30:00</td>
+      <td>08:45:00</td>
+      <td>2022-03-19</td>
+      <td>0 days 08:30:00</td>
+      <td>0 days 08:45:00</td>
+      <td>0 days 00:15:00</td>
+      <td>1.083975</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>rjto796129700</td>
+      <td>38</td>
+      <td>4.7</td>
+      <td>11.003669</td>
+      <td>76.976494</td>
+      <td>11.053669</td>
+      <td>77.026494</td>
+      <td>Sunny</td>
+      <td>Medium</td>
+      <td>motorcycle</td>
+      <td>Metropolitian</td>
+      <td>105</td>
+      <td>Cosmetics</td>
+      <td>18:00:00</td>
+      <td>18:10:00</td>
+      <td>2022-04-05</td>
+      <td>0 days 18:00:00</td>
+      <td>0 days 18:10:00</td>
+      <td>0 days 00:10:00</td>
+      <td>5.457929</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>zguw716275638</td>
+      <td>32</td>
+      <td>4.6</td>
+      <td>12.972793</td>
+      <td>80.249982</td>
+      <td>13.012793</td>
+      <td>80.289982</td>
+      <td>Cloudy</td>
+      <td>High</td>
+      <td>scooter</td>
+      <td>Metropolitian</td>
+      <td>150</td>
+      <td>Toys</td>
+      <td>13:30:00</td>
+      <td>13:45:00</td>
+      <td>2022-03-26</td>
+      <td>0 days 13:30:00</td>
+      <td>0 days 13:45:00</td>
+      <td>0 days 00:15:00</td>
+      <td>4.334621</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+Salida:
+```Bash
+Distancia promedio de entregas: 10.37 km
+```
+
+> Análisis: La distancia promedio de las entregas es de 10.37 kilómetros.
+
+* Impacto del Clima y Tráfico en el Tiempo de Entregas
+
+Se analiza cómo las condiciones climáticas (Weather) y el estado del tráfico (Traffic) afectan el tiempo promedio de entrega. Se crea una tabla dinámica para visualizar el tiempo promedio de entrega para cada combinación de clima y tráfico. Se incluye una función para formatear los minutos a un formato de horas y minutos más legible.
+```Bash
+# Formato de salida para la tabla dinamica (para el tiempo que sea más facil de leer)
+df_copia = df_amazon_delivery[['Order_ID', 'Delivery_Time']].copy()
+
+# Crear una función para convertir minutos a formato legible
+def format_minutes_to_hh_mm_ss(minutes):
+    if pd.isna(minutes): # Manejar valores NaN si existen
+        return np.nan
+
+    total_seconds = int(minutes * 60)  # Convertir a segundos totales y asegurar que sea entero
+    hours = total_seconds // 3600
+    minutes_remainder = (total_seconds % 3600) // 60
+    seconds_remainder = total_seconds % 60
+
+    # Formato "HH:MM:SS"
+    # :02d asegura que los valores siempre tengan dos dígitos (ej., 5 se convierte en 05)
+    return f"{hours}:{minutes_remainder:02d}:{seconds_remainder:02d}"
+
+# --- Crear la nueva columna formateada en el DataFrame ---
+df_copia['Delivery_Time_Formatted'] = df_copia['Delivery_Time'].apply(format_minutes_to_hh_mm_ss)
+
+# Impacto del clima y trafico en el tiempo de entregas (tabla dinamica)
+clima_trafico_tiempo_entrega = pd.pivot_table(df_amazon_delivery,
+                                              values='Delivery_Time',
+                                              index=['Weather', 'Traffic'],
+                                              aggfunc='mean')
+
+# Aplicar el formateo a la columna de resultados de la tabla dinámica
+clima_trafico_tiempo_entrega['Delivery_Time_Formatted'] = \
+    clima_trafico_tiempo_entrega['Delivery_Time'].apply(format_minutes_to_hh_mm_ss)
+
+print("Tabla Dinámica Impacto del Clima y Tráfico en el Tiempo de Entregas")
+clima_trafico_tiempo_entrega
+```
+
+Salida:
+```Bash
+Tabla Dinámica Impacto del Clima y Tráfico en el Tiempo de Entregas
+                     Delivery_Time Delivery_Time_Formatted
+Weather    Traffic
+Cloudy     High         138.900838              2:18:54
+           Jam          174.652232              2:54:39
+           Low          106.688986              1:46:41
+           Medium       136.680720              2:16:40
+Fog        High         134.856390              2:14:51
+           Jam          174.054054              2:54:03
+           Low          104.950475              1:44:57
+           Medium       132.230812              2:12:13
+Sandstorms High         131.856932              2:11:51
+           Jam          142.185776              2:22:11
+           Low           96.780159              1:36:46
+           Medium       132.783237              2:12:46
+Stormy     High         131.886555              2:11:53
+           Jam          142.232743              2:22:13
+           Low           98.627676              1:38:37
+           Medium       131.786435              2:11:47
+Sunny      High         110.011158              1:50:00
+           Jam          108.650986              1:48:39
+           Low          102.600917              1:42:36
+           Medium        96.076389              1:36:04
+Windy      High         128.680168              2:08:40
+           Jam          142.869584              2:22:52
+           Low           98.702198              1:38:42
+           Medium       130.675721              2:10:40
+```
+
+> Análisis: La tabla dinámica muestra los diferentes tiempos de entrega (tanto en minutos como en formato de hora para facilitar la lectura). Se observa claramente que las condiciones de tráfico "Jam" (atasco) y "High" (alto) resultan en tiempos de entrega significativamente mayores, independientemente del clima. Las entregas en condiciones de tráfico "Low" (bajo) y clima "Sunny" (soleado) son las más rápidas.
+
+* Eficiencia por Tipo de Vehículo
+
+Se analiza el tiempo promedio de entrega según el tipo de vehículo utilizado (Vehicle).
+```Python
+# Agrupar por vehiculo para eficacia
+tipo_vehiculo_promedio = pd.pivot_table(df_amazon_delivery,
+                                        values='Delivery_Time',
+                                        index=['Vehicle'],
+                                        aggfunc='mean')
+
+# Aplicar el formateo a la columna de resultados de la tabla dinámica
+tipo_vehiculo_promedio['Delivery_Time_Formatted'] = \
+    tipo_vehiculo_promedio['Delivery_Time'].apply(format_minutes_to_hh_mm_ss)
+
+print("Tabla Dinámica del Tipo de Vehiculo en el Tiempo de Entregas")
+tipo_vehiculo_promedio
+```
+
+Salida:
+```Bash
+Tabla Dinámica del Tipo de Vehiculo en el Tiempo de Entregas
+            Delivery_Time Delivery_Time_Formatted
+Vehicle
+bicycle        122.857143              2:02:51
+motorcycle     131.030324              2:11:01
+scooter        116.375385              1:56:22
+van            116.074640              1:56:04
+```
+
+> Análisis: La tabla dinámica muestra el tiempo promedio que se tarda en entregar el paquete por tipo de vehículo. Se observa que el scooter y la van son los tipos de vehículos que tienen un mejor tiempo promedio de entrega, siendo ligeramente más rápidos que las motorcycle y bicycle.
+
+* Eficiencia por Área de Entrega
+
+Se analiza el tiempo promedio de entrega según el tipo de área de entrega (Area).
+```Bash
+# Agrupar pro tipo de área para eficiencia
+tipo_area_promedio = pd.pivot_table(df_amazon_delivery,
+                                    values='Delivery_Time',
+                                    index=['Area'],
+                                    aggfunc='mean')
+
+tipo_area_promedio['Delivery_Time_Formatted'] = \
+    tipo_area_promedio['Delivery_Time'].apply(format_minutes_to_hh_mm_ss)
+
+print('Tabla Dinámica por Tipo de Área en el Tiempo de Entregas')
+tipo_area_promedio
+```
+
+Salida:
+```Bash
+Tabla Dinámica por Tipo de Área en el Tiempo de Entregas
+               Delivery_Time Delivery_Time_Formatted
+Area
+Metropolitian     129.707626              2:09:42
+Other             104.525110              1:44:31
+Semi-Urban        238.552632              3:58:33
+Urban             109.433871              1:49:26
+```
+
+> Análisis: El tipo de área con el mejor tiempo de entrega es 'Other' (área no registrada u omitida) con 1 hora y 44 minutos (1:44), seguida de 'Urban' con 1 hora y 49 minutos (1:49). Las áreas 'Semi-Urban' muestran un tiempo de entrega significativamente más alto, lo que podría indicar desafíos logísticos en estas zonas.
+
+* Calificación del Agente y el Tiempo de Entregas
+
+Se examina la relación entre la calificación del agente de entrega (Agent_Rating) y el tiempo promedio de entrega.
+```Bash
+agente_tiempo_entrega_promedio = pd.pivot_table(df_amazon_delivery,
+                                                values='Delivery_Time',
+                                                index=['Agent_Rating'],
+                                                aggfunc='mean')
+
+agente_tiempo_entrega_promedio['Delivery_Time_Formatted'] = \
+    agente_tiempo_entrega_promedio['Delivery_Time'].apply(format_minutes_to_hh_mm_ss)
+
+print('Tabla Dinámica por Agent_Rating en el Tiempo de Entregas')
+agente_tiempo_entrega_promedio.sort_values(by='Agent_Rating',ascending=False)
+```
+
+Salida:
+```Bash
+Tabla Dinámica por Agent_Rating en el Tiempo de Entregas
+              Delivery_Time Delivery_Time_Formatted
+Agent_Rating
+6.0        111.642857              1:51:38
+5.0        120.976727              2:00:58
+4.9        114.763670              1:54:45
+4.8        113.962927              1:53:57
+4.7        115.208905              1:55:12
+4.6        116.644524              1:56:38
+4.5        112.076294              1:52:04
+4.4        165.235856              2:45:14
+4.3        165.139106              2:45:08
+4.2        165.612835              2:45:36
+4.1        165.173427              2:45:10
+4.0        163.881151              2:43:52
+3.9        178.284264              2:58:17
+3.8        175.328947              2:55:19
+3.7        172.773333              2:52:46
+3.6        171.357488              2:51:21
+3.5        173.040161              2:53:02
+3.4        173.468750              2:53:28
+3.3        180.200000              3:00:12
+3.2        177.172414              2:57:10
+3.1        182.758621              3:02:45
+3.0        163.333333              2:43:20
+2.9        175.578947              2:55:34
+2.8        168.842105              2:48:50
+2.7        179.318182              2:59:19
+2.6        172.772727              2:52:46
+2.5        180.300000              3:00:18
+1.0        132.045455              2:12:02
+```
+
+> Análisis: La tabla dinámica muestra que los agentes con mejor calificación (Agent_Rating más alto) tienden a tener los mejores tiempos de entrega. Hay una correlación inversa notable: a medida que la calificación del agente disminuye, el tiempo de entrega promedio tiende a aumentar. Esto sugiere que la experiencia y el rendimiento del agente son factores significativos en la eficiencia de la entrega.
+
+
 5. **Visualización de datos**:
    - Uso de gráficos de barras, líneas, cajas, dispersión y mapas de calor.
 
