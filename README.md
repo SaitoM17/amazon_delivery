@@ -1480,6 +1480,439 @@ Agent_Rating
 
 > Análisis: La tabla dinámica muestra que los agentes con mejor calificación (Agent_Rating más alto) tienden a tener los mejores tiempos de entrega. Hay una correlación inversa notable: a medida que la calificación del agente disminuye, el tiempo de entrega promedio tiende a aumentar. Esto sugiere que la experiencia y el rendimiento del agente son factores significativos en la eficiencia de la entrega.
 
+##### **2. Identificar zonas geográficas y franjas horarias con mayor desafíos operativos**
+
+* Calcular el Momento de Llegada
+
+Se crean nuevas columnas para obtener una visión temporal más detallada de las entregas:
+    * Delivery_Duration: Convierte Delivery_Time (en minutos) a un formato de timedelta.
+    * Pickup_Timestamp: Combina Order_Date y Pickup_Time_TD para obtener la fecha y hora exactas de la recolección.
+    * Delivery_Completion_Timestamp: Calcula la fecha y hora en que se completó la entrega, sumando Delivery_Duration a Pickup_Timestamp.
+    * Delivery_Hour: Extrae la hora de Delivery_Completion_Timestamp.
+    * Delivery_Day_of_Week: Extrae el día de la semana de Delivery_Completion_Timestamp.
+
+```Python
+# Transformar Delivery_Time de minutos a una hora (formato hora)
+df_amazon_delivery['Delivery_Duration'] = pd.to_timedelta(df_amazon_delivery['Delivery_Time'], unit='minutes')
+
+# Fecha y hora de la recolección
+df_amazon_delivery['Pickup_Timestamp'] = df_amazon_delivery['Order_Date'] + df_amazon_delivery['Pickup_Time_TD']
+
+# Fecha y hora en que se completó la entrega
+df_amazon_delivery['Delivery_Completion_Timestamp'] = df_amazon_delivery['Pickup_Timestamp'] + df_amazon_delivery['Delivery_Duration']
+
+df_amazon_delivery['Delivery_Hour'] = df_amazon_delivery['Delivery_Completion_Timestamp'].dt.hour
+df_amazon_delivery['Delivery_Day_of_Week'] = df_amazon_delivery['Delivery_Completion_Timestamp'].dt.day_name()
+
+df_amazon_delivery[['Order_ID', 'Order_Date', 'Order_Time', 'Pickup_Time', 'Pickup_Timestamp','Delivery_Duration' ,'Delivery_Completion_Timestamp', 'Delivery_Hour', 'Delivery_Day_of_Week']].head(5)
+```
+
+Salida:
+
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Order_ID</th>
+      <th>Order_Date</th>
+      <th>Order_Time</th>
+      <th>Pickup_Time</th>
+      <th>Pickup_Timestamp</th>
+      <th>Delivery_Duration</th>
+      <th>Delivery_Completion_Timestamp</th>
+      <th>Delivery_Hour</th>
+      <th>Delivery_Day_of_Week</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ialx566343618</td>
+      <td>2022-03-19</td>
+      <td>11:30:00</td>
+      <td>11:45:00</td>
+      <td>2022-03-19 11:45:00</td>
+      <td>0 days 02:00:00</td>
+      <td>2022-03-19 13:45:00</td>
+      <td>13</td>
+      <td>Saturday</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>akqg208421122</td>
+      <td>2022-03-25</td>
+      <td>19:45:00</td>
+      <td>19:50:00</td>
+      <td>2022-03-25 19:50:00</td>
+      <td>0 days 02:45:00</td>
+      <td>2022-03-25 22:35:00</td>
+      <td>22</td>
+      <td>Friday</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>njpu434582536</td>
+      <td>2022-03-19</td>
+      <td>08:30:00</td>
+      <td>08:45:00</td>
+      <td>2022-03-19 08:45:00</td>
+      <td>0 days 02:10:00</td>
+      <td>2022-03-19 10:55:00</td>
+      <td>10</td>
+      <td>Saturday</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>rjto796129700</td>
+      <td>2022-04-05</td>
+      <td>18:00:00</td>
+      <td>18:10:00</td>
+      <td>2022-04-05 18:10:00</td>
+      <td>0 days 01:45:00</td>
+      <td>2022-04-05 19:55:00</td>
+      <td>19</td>
+      <td>Tuesday</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>zguw716275638</td>
+      <td>2022-03-26</td>
+      <td>13:30:00</td>
+      <td>13:45:00</td>
+      <td>2022-03-26 13:45:00</td>
+      <td>0 days 02:30:00</td>
+      <td>2022-03-26 16:15:00</td>
+      <td>16</td>
+      <td>Saturday</td>
+    </tr>
+  </tbody>
+</table>
+
+> Análisis: La columna Delivery_Completion_Timestamp muestra la fecha y hora exactas en que se completó cada entrega, incluyendo el día de la semana. Esto es crucial para analizar patrones temporales de entrega.
+
+* Identificar Franjas Horarias
+
+Se define una función get_time_slot para categorizar la hora de entrega en franjas horarias predefinidas (Mañana Pico, Mañana Tardía, Mediodía, Tarde Pico, Noche Temprana, Noche Tardía, Madrugada). Esta categorización facilita el análisis de los patrones de entrega a lo largo del día.
+```Python
+def get_time_slot(hour):
+    if 6 <= hour < 9:
+        return '06:00 - 08:59 (Mañana Pico)'
+    elif 9 <= hour < 12:
+        return '09:00 - 11:59 (Mañana Tardia)'
+    elif 12 <= hour < 14:
+        return '12:00 - 13:59 (Mediodia)'
+    elif 14 <= hour < 17:
+        return '14:00 - 16:59 (Tarde Pico)'
+    elif 17 <= hour < 20:
+        return '17:00 - 19:59 (Noche Temprana)'
+    elif 20 <= hour < 23:
+        return '20:00 - 22:59 (Noche Tardia)'
+    else:
+        return '23:00 - 05:59 (Madrugada)'
+
+df_amazon_delivery['Delivery_Time_Slot'] = df_amazon_delivery['Delivery_Hour'].apply(get_time_slot)
+
+df_amazon_delivery[['Order_ID',
+                    'Order_Date',
+                    'Order_Time',
+                    'Pickup_Time',
+                    'Pickup_Timestamp',
+                    'Delivery_Duration',
+                    'Delivery_Completion_Timestamp',
+                    'Delivery_Hour',
+                    'Delivery_Day_of_Week',
+                    'Delivery_Time_Slot']].head(5)
+```
+
+Salida:
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Order_ID</th>
+      <th>Order_Date</th>
+      <th>Order_Time</th>
+      <th>Pickup_Time</th>
+      <th>Pickup_Timestamp</th>
+      <th>Delivery_Duration</th>
+      <th>Delivery_Completion_Timestamp</th>
+      <th>Delivery_Hour</th>
+      <th>Delivery_Day_of_Week</th>
+      <th>Delivery_Time_Slot</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ialx566343618</td>
+      <td>2022-03-19</td>
+      <td>11:30:00</td>
+      <td>11:45:00</td>
+      <td>2022-03-19 11:45:00</td>
+      <td>0 days 02:00:00</td>
+      <td>2022-03-19 13:45:00</td>
+      <td>13</td>
+      <td>Saturday</td>
+      <td>12:00 - 13:59 (Mediodia)</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>akqg208421122</td>
+      <td>2022-03-25</td>
+      <td>19:45:00</td>
+      <td>19:50:00</td>
+      <td>2022-03-25 19:50:00</td>
+      <td>0 days 02:45:00</td>
+      <td>2022-03-25 22:35:00</td>
+      <td>22</td>
+      <td>Friday</td>
+      <td>20:00 - 22:59 (Noche Tardia)</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>njpu434582536</td>
+      <td>2022-03-19</td>
+      <td>08:30:00</td>
+      <td>08:45:00</td>
+      <td>2022-03-19 08:45:00</td>
+      <td>0 days 02:10:00</td>
+      <td>2022-03-19 10:55:00</td>
+      <td>10</td>
+      <td>Saturday</td>
+      <td>09:00 - 11:59 (Mañana Tardia)</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>rjto796129700</td>
+      <td>2022-04-05</td>
+      <td>18:00:00</td>
+      <td>18:10:00</td>
+      <td>2022-04-05 18:10:00</td>
+      <td>0 days 01:45:00</td>
+      <td>2022-04-05 19:55:00</td>
+      <td>19</td>
+      <td>Tuesday</td>
+      <td>17:00 - 19:59 (Noche Temprana)</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>zguw716275638</td>
+      <td>2022-03-26</td>
+      <td>13:30:00</td>
+      <td>13:45:00</td>
+      <td>2022-03-26 13:45:00</td>
+      <td>0 days 02:30:00</td>
+      <td>2022-03-26 16:15:00</td>
+      <td>16</td>
+      <td>Saturday</td>
+      <td>14:00 - 16:59 (Tarde Pico)</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+Se agrupan los pedidos por ``Delivery_Time_Slot`` para contar la cantidad de entregas en cada franja horaria.
+```Python
+franjas_horaria = pd.pivot_table(df_amazon_delivery,
+                                values='Order_ID',
+                                index=['Delivery_Time_Slot'],
+                                aggfunc='count')
+print('La Tabla Dinámica Muestra la Cantidad de Pedidos Entregados en las Diferentes Franjas Horarias')
+franjas_horaria.sort_values(by='Order_ID', ascending=False)
+```
+
+Salida:
+```Bash
+La Tabla Dinámica Muestra la Cantidad de Pedidos Entregados en las Diferentes Franjas Horarias
+                                Order_ID
+Delivery_Time_Slot
+23:00 - 05:59 (Madrugada)          16962
+20:00 - 22:59 (Noche Tardia)       11929
+17:00 - 19:59 (Noche Temprana)      4847
+09:00 - 11:59 (Mañana Tardia)       4198
+14:00 - 16:59 (Tarde Pico)          2900
+12:00 - 13:59 (Mediodia)            2764
+06:00 - 08:59 (Mañana Pico)           44
+```
+> Análisis: Las franjas horarias nos ayudan a identificar cuál es el horario en que se entregan más los pedidos. Se muestra que la Madrugada (23:00 - 05:59) es el horario con la mayor cantidad de pedidos entregados (16962), seguido de Noche Tardía (20:00 - 22:59) con 11929 pedidos entregados. Esto puede indicar patrones de demanda o disponibilidad de agentes durante estas horas.
+
+* Identificar Entregas Desafiantes
+
+Se define una "entrega desafiante" como aquella cuyo Delivery_Time es superior a 215 minutos (3 horas y 35 minutos), basándose en el percentil 95 de los tiempos de entrega históricos (como se calculó en la Parte 2 del EDA). Se crea una nueva columna booleana Is_Challenging_Delivery para marcar estos pedidos.
+```Python
+umbral_entrega_desafiante_minutos = 215
+print(f"Umbral de 'Entrega Desafiante' definido: {umbral_entrega_desafiante_minutos} minutos (basado en el 95.22% de entregas históricas).")
+
+# Crea la columna booleana 'Is_Challenging_Delivery'
+# Será True si el Delivery_Time es MAYOR que el umbral, indicando que es un desafío.
+df_amazon_delivery['Is_Challenging_Delivery'] = df_amazon_delivery['Delivery_Time'] > umbral_entrega_desafiante_minutos
+
+df_amazon_delivery[['Order_ID',
+                    'Order_Date',
+                    'Order_Time',
+                    'Pickup_Time',
+                    'Pickup_Timestamp',
+                    'Delivery_Time',
+                    'Delivery_Duration',
+                    'Delivery_Completion_Timestamp',
+                    'Delivery_Day_of_Week',
+                    'Delivery_Time_Slot',
+                    'Is_Challenging_Delivery']].head(3)
+```
+
+Salida:
+```Bash 
+Umbral de 'Entrega Desafiante' definido: 215 minutos (basado en el 95.22% de entregas históricas).
+```
+<div>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Order_ID</th>
+      <th>Order_Date</th>
+      <th>Order_Time</th>
+      <th>Pickup_Time</th>
+      <th>Pickup_Timestamp</th>
+      <th>Delivery_Time</th>
+      <th>Delivery_Duration</th>
+      <th>Delivery_Completion_Timestamp</th>
+      <th>Delivery_Day_of_Week</th>
+      <th>Delivery_Time_Slot</th>
+      <th>Is_Challenging_Delivery</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>ialx566343618</td>
+      <td>2022-03-19</td>
+      <td>11:30:00</td>
+      <td>11:45:00</td>
+      <td>2022-03-19 11:45:00</td>
+      <td>120</td>
+      <td>0 days 02:00:00</td>
+      <td>2022-03-19 13:45:00</td>
+      <td>Saturday</td>
+      <td>12:00 - 13:59 (Mediodia)</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>akqg208421122</td>
+      <td>2022-03-25</td>
+      <td>19:45:00</td>
+      <td>19:50:00</td>
+      <td>2022-03-25 19:50:00</td>
+      <td>165</td>
+      <td>0 days 02:45:00</td>
+      <td>2022-03-25 22:35:00</td>
+      <td>Friday</td>
+      <td>20:00 - 22:59 (Noche Tardia)</td>
+      <td>False</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>njpu434582536</td>
+      <td>2022-03-19</td>
+      <td>08:30:00</td>
+      <td>08:45:00</td>
+      <td>2022-03-19 08:45:00</td>
+      <td>130</td>
+      <td>0 days 02:10:00</td>
+      <td>2022-03-19 10:55:00</td>
+      <td>Saturday</td>
+      <td>09:00 - 11:59 (Mañana Tardia)</td>
+      <td>False</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+Se cuenta la cantidad de pedidos que son o no son desafiantes.
+```Python
+entregas_desafiantes = df_amazon_delivery.groupby(['Is_Challenging_Delivery'])['Order_ID'].count()
+print('Is_Challenging_Delivery nos muestra la cantidad de pedidos que son o no son desafiantes')
+entregas_desafiantes
+```
+
+Salida:
+```Bash
+Is_Challenging_Delivery nos muestra la cantidad de pedidos que son o no son desafiantes
+Is_Challenging_Delivery
+False    41559
+True      2085
+Name: Order_ID, dtype: int64
+```
+
+> Análisis: Se identifica que 41559 órdenes no fueron desafiantes, lo que significa que se entregaron en 215 minutos (3 horas y 35 minutos) o menos (se entregaron a tiempo). Solo 2085 pedidos fueron desafiantes, ya que se entregaron después de este umbral. Esto cuantifica el volumen de entregas que requieren una atención especial.
+
+* Agregación para Identificar Zonas y Franjas Horarias con Desafíos
+
+Se realizan agregaciones para identificar patrones de entregas desafiantes por área y franja horaria, así como por bins geográficos (latitud/longitud redondeada).
+
+    * Desafíos por Área y Franja Horaria:
+        
+        Se agrupa el DataFrame por Area y Delivery_Time_Slot para calcular el tiempo promedio de entrega, el número de entregas desafiantes y el total de entregas, además del porcentaje de entregas desafiantes.
+
+        ```Python
+        challenges_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
+            Avg_Delivery_Time=('Delivery_Time', 'mean'),
+            Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
+            Total_Deliveries=('Order_ID', 'count')).reset_index()
+
+        challenges_by_area_timeslot['Percentage_Challenging'] = (
+            challenges_by_area_timeslot['Num_Challenging_Deliveries'] / challenges_by_area_timeslot['Total_Deliveries']) * 100
+
+        # También podemos ver el tiempo promedio por zona y franja horaria directamente
+        avg_time_by_area_timeslot = df_amazon_delivery.groupby(['Area', 'Delivery_Time_Slot']).agg(
+            Avg_Delivery_Time_Minutes=('Delivery_Time', 'mean')).reset_index()
+        ```
+
+    * Desafíos por Bins Geográficos:
+        
+        Se crean bins geográficos redondeando la latitud y longitud de entrega para identificar zonas geográficas más pequeñas con desafíos.
+
+        ```Python
+        df_amazon_delivery['Lat_Bin'] = df_amazon_delivery['Drop_Latitude'].round(2)
+        df_amazon_delivery['Lon_Bin'] = df_amazon_delivery['Drop_Longitude'].round(2)
+
+        challenges_by_geo_bin = df_amazon_delivery.groupby(['Lat_Bin', 'Lon_Bin']).agg(
+            Avg_Delivery_Time=('Delivery_Time', 'mean'),
+            Num_Challenging_Deliveries=('Is_Challenging_Delivery', lambda x: x.sum()),
+            Total_Deliveries=('Order_ID', 'count')).reset_index()
+
+        challenges_by_geo_bin['Percentage_Challenging'] = (
+            challenges_by_geo_bin['Num_Challenging_Deliveries'] / challenges_by_geo_bin['Total_Deliveries']) * 100
+        ```
+
+> Propósito: Estas agregaciones son fundamentales para identificar los puntos críticos en la operación de entrega, permitiendo a la empresa enfocar recursos en áreas y momentos específicos para mejorar la eficiencia.
+
+Propósito: Estas agregaciones son fundamentales para identificar los puntos críticos en la operación de entrega, permitiendo a la empresa enfocar recursos en áreas y momentos específicos para mejorar la eficiencia.
+
+* Exportación de Datos para Tableau
+
+Los DataFrames procesados y agregados se exportan a archivos CSV. Estos archivos están listos para ser utilizados en herramientas de visualización como Tableau, lo que permitirá la creación de dashboards interactivos para un análisis más profundo y la comunicación de hallazgos.
+```Python
+# Exportar el DataFrame completo con las nuevas columnas
+df_amazon_delivery.to_csv('../data/processed/datos_entrega_procesados.csv', index=False)
+
+# Exportar los datos agregados por área y franja horaria para gráficos específicos
+challenges_by_area_timeslot.to_csv('../data/processed/desafios_por_area_y_hora.csv', index=False)
+
+# Exportar datos agregados por bins geográficos para mapas de calor
+challenges_by_geo_bin.to_csv('../data/processed/desafios_por_zona_geografica.csv', index=False)
+```
+
+> Propósito: Facilitar la creación de visualizaciones y dashboards que permitan una comprensión más intuitiva de los datos y los desafíos operativos.
+
+Enlaces a los Gráficos Creados con Tableau
+
+Los siguientes enlaces corresponden a los dashboards interactivos creados en Tableau, que visualizan los hallazgos del análisis exploratorio de datos:
+
+* [Amazon_Delivery_Parte1](https://public.tableau.com/app/profile/said.mariano/viz/Amazon_Delivery_Parte1/PromediodeTiempodeEntregaporFranjaHoraria)
+* [Amazon_Delivery_Parte2](https://public.tableau.com/app/profile/said.mariano/viz/Amazon_Delivery_Parte2/MapadeCalorCruzadoPromediodeTiempodeEntregaporreayFranjaHoraria)
 
 5. **Visualización de datos**:
    - Uso de gráficos de barras, líneas, cajas, dispersión y mapas de calor.
