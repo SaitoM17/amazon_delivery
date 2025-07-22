@@ -1947,7 +1947,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![Promedio de Tiempo de Entregas por Calificación de Agente](reports/figures/Promedio de Tiempo por Calificacion de Agente.png)
+![Promedio de tiempo de entregas por calificación de agente](reports/figures/Promedio_Tiempo_Calificacion_Agente.png)
 
 > Análisis: Como se había observado anteriormente en la 'Tabla Dinámica por Agent_Rating en el Tiempo de Entregas', los datos sugieren una clara relación inversa entre la calificación del agente y el tiempo de entrega. Generalmente, los agentes con calificaciones más altas tienden a tener tiempos de entrega promedio más bajos, con la notable excepción de un agente con una calificación de 1.0 que, a pesar de su baja calificación, muestra un tiempo promedio de entrega relativamente bajo (132 minutos). Esto podría indicar un caso atípico o una baja cantidad de pedidos para ese agente específico.
 
@@ -2037,7 +2037,7 @@ plt.grid(True, linestyle='--', alpha=0.7)
 plt.tight_layout()
 plt.show()
 ```
-![Calificación vs. Promedio de Tiempo y Volumen de pedidos][reports/figures/calificacion_agente_vs_promedio_tiempo_volumen_pedidos.png]
+![Calificación vs. Promedio de Tiempo y Volumen de pedidos](reports/figures/calificacion_agente_vs_promedio_tiempo_volumen_pedidos.png)
 
 > Análisis: Los agentes con baja calificación y alto tiempo de entrega promedio no son los principales responsables del volumen total de desafíos. Representan un "problema de eficiencia" individual, pero no un "problema de volumen" a gran escala. Por ejemplo, la calificación 1.0 tiene un tiempo de entrega alto (aproximadamente 132 minutos) pero es una burbuja muy pequeña, lo que indica un bajo volumen de pedidos.
 >
