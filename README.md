@@ -1850,9 +1850,9 @@ Name: Order_ID, dtype: int64
 
 * Agregación para Identificar Zonas y Franjas Horarias con Desafíos
 
-Se realizan agregaciones para identificar patrones de entregas desafiantes por área y franja horaria, así como por bins geográficos (latitud/longitud redondeada).
+    Se realizan agregaciones para identificar patrones de entregas desafiantes por área y franja horaria, así como por bins geográficos (latitud/longitud redondeada).
 
-* Desafíos por Área y Franja Horaria:
+    * Desafíos por Área y Franja Horaria:
         
     Se agrupa el DataFrame por Area y Delivery_Time_Slot para calcular el tiempo promedio de entrega, el número de entregas desafiantes y el total de entregas, además del porcentaje de entregas desafiantes.
 
