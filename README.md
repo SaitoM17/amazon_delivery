@@ -2374,7 +2374,8 @@ Link: [Dashboard Amazon Delivery](https://public.tableau.com/app/profile/said.ma
 ---
 
 ## 🛠️ Tecnologías
-
+- **SQL**
+- **MySQL Workbench**
 - **Python** - Limpeieza de datos y análisis de datos
    - Pandas
    - Numpy
@@ -2402,7 +2403,7 @@ Link: [Dashboard Amazon Delivery](https://public.tableau.com/app/profile/said.ma
   - [Evaluar la eficiencia general de las entregas](reports/evaluar_eficiencia_geneal_entregas.docx)
   - [Identificar zonas geográficas y franjas horarias con mayores desafíos operativos](reports/identifcar_zonas_geografiucas_franjas_horarias_mayores_desafios_operativos.docx)
   - [Reconocer el desempeño individual de los repartidores, destacando a los más eficientes y detectado áreas de mejora](reports/reconocer_desempenio_individual_repartidores_desatacando_eficientes_detectando_areas_mejora.docx)
-  
+
 ---
 
 ## 👤 Autor
