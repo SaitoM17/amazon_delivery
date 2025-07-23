@@ -10,6 +10,11 @@ Este proyecto consiste en un dashboard interactivo y la generación de reportes 
 - [🎯 Propósito](#-propósito)
 - [📦 Conjunto de Datos](#-conjunto-de-datos)
 - [🧪 Desarrollo del Proyecto](#-desarrollo-del-proyecto)
+  - [Creación y carga de la base de datos](#1-creación-y-carga-de-la-base-de-datos)
+  - [Exploración inicial de los datos](#2-exploración-inicial-de-los-datos)
+  - [Limpieza y preprocesamiento](#3-limpieza-y-preprocesamiento)
+  - [Exportación de datos limpios](#4-exportación-de-datos-limpios)
+  - [Análisis exploratorio de datos (EDA)](#5-análisis-exploratorio-de-datos-eda)
 - [📌 Vista previa del Dashboard](#-vista-previa-del-dashboard)
 - [💡 Insight clave](#-insight-clave)
 - [🛠️ Tecnologías](#️-tecnologías)
@@ -792,7 +797,7 @@ Pasos para exportar los datos desde MySQL Workbench: Después de ejecutar la con
 
 ***Archivo: [exportacion_datos.sql](sql/exportacion_datos.sql)***
 
-### 4. **Análisis exploratorio de datos (EDA)**
+### 5. **Análisis exploratorio de datos (EDA)**
 
 La fase inicial del Análisis Exploratorio de Datos (EDA) se utilizo Python y las librerías ``pandas, numpy, seaborn, matplotlib``. El objetivo es cargar el conjunto de datos limpio, comprender su estructura, tipos de datos y realizar las transformaciones necesarias para un análisis posterior.
 
