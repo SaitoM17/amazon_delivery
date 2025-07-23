@@ -2388,12 +2388,21 @@ Link: [Dashboard Amazon Delivery](https://public.tableau.com/app/profile/said.ma
 ---
 
 ## 📂 Archivos
-- [amazon_delivery.csv](data/raw/amazon_delivery.csv): Conjunto de datos originales obtenido de Kaggle(sin procesar).
-- [amazon_delivery.csv](data/processed/amazon_delivery_limpios.csv): Conjunto de datos limpios.
-- [datos_entrega_procesados.csv](data/processed/datos_entrega_procesados.csv): Conjunto de datos granular y primario del análisis (Contiene cada registro de entrega individual, enriquecido con columnas calculadas y derivadas).
-- [desafios_por_area_y_hora.csv](data/processed/desafios_por_area_y_hora.csv): Resume las métricas clave de desempeño (tiempo promedio de entrega, número total de entregas, número de entregas desafiantes y su porcentaje) por cada combinación única de Area (zona geográfica general) y Delivery_Time_Slot (franja horaria).
-- [desafios_por_zona_geografica.csv](data/processed/desafios_por_zona_geografica.csv): Contiene métricas resumidas (tiempo promedio de entrega, número total de entregas, número de entregas desafiantes y su porcentaje) por Lat_Bin y Lon_Bin (coordenadas geográficas binned/agrupadas en celdas de cuadrícula).
 
+**Conjunto de datos**
+  - [amazon_delivery.csv](data/raw/amazon_delivery.csv): Conjunto de datos originales obtenido de Kaggle(sin procesar).
+  - [amazon_delivery.csv](data/processed/amazon_delivery_limpios.csv): Conjunto de datos limpios.
+  - [datos_entrega_procesados.csv](data/processed/datos_entrega_procesados.csv): Conjunto de datos granular y primario del análisis (Contiene cada registro de entrega individual, enriquecido con columnas calculadas y derivadas).
+  - [desafios_por_area_y_hora.csv](data/processed/desafios_por_area_y_hora.csv): Resume las métricas clave de desempeño (tiempo promedio de entrega, número total de entregas, número de entregas desafiantes y su porcentaje) por cada combinación única de Area (zona geográfica general) y Delivery_Time_Slot (franja horaria).
+  - [desafios_por_zona_geografica.csv](data/processed/desafios_por_zona_geografica.csv): Contiene métricas resumidas (tiempo promedio de entrega, número total de entregas, número de entregas desafiantes y su porcentaje) por Lat_Bin y Lon_Bin (coordenadas geográficas binned/agrupadas en celdas de cuadrícula).
+
+**Reportes**
+  - [Limpieza y Procesamiento de datos](reports/Reporte_limpieza_procesamiento.docx)
+  - [Imputación y eliminación de valores nulos](reports/Imputación_eliminación_valores_nulos.docx)
+  - [Evaluar la eficiencia general de las entregas](reports/evaluar_eficiencia_geneal_entregas.docx)
+  - [Identificar zonas geográficas y franjas horarias con mayores desafíos operativos](reports/identifcar_zonas_geografiucas_franjas_horarias_mayores_desafios_operativos.docx)
+  - [Reconocer el desempeño individual de los repartidores, destacando a los más eficientes y detectado áreas de mejora](reports/reconocer_desempenio_individual_repartidores_desatacando_eficientes_detectando_areas_mejora.docx)
+  
 ---
 
 ## 👤 Autor
