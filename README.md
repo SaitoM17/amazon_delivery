@@ -2427,7 +2427,7 @@ Link: [Dashboard Amazon Delivery](https://public.tableau.com/app/profile/said.ma
 
 ## 👤 Autor
 
-**Said Mariano Sánchez** – [📧](smariano170@gmail.com) smariano170@gmail.com
+**Said Mariano Sánchez** – [📧](smariano170@gmail.com) *smariano170@gmail.com*
 *Analista de Datos Jr. | Visualización | Power BI | Python | SQL*
 🌎 México
 Este proyecto forma parte de mi portafolio como analista de datos Jr.
